@@ -1788,7 +1788,7 @@ The leftmost codepage (.xxx) wins.
 
     //======================TEST=======================
     size_t neededBufferSize = uprefs_getBCP47Tag(nullptr, 0, &status);
-    char *windowsLocale = new char[neededBufferSize];
+    static char windowsLocale[LOCALE_NAME_MAX_LENGTH] = {};
     size_t length = uprefs_getBCP47Tag(windowsLocale, neededBufferSize, &status);
     //======================TEST=======================
 
