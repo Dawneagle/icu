@@ -1781,11 +1781,6 @@ The leftmost codepage (.xxx) wins.
     UErrorCode status = U_ZERO_ERROR;
     char *correctedPOSIXLocale = nullptr;
 
-    // If we have already figured this out just use the cached value
-    if (gCorrectedPOSIXLocale != nullptr) {
-        return gCorrectedPOSIXLocale;
-    }
-
     size_t neededBufferSize = uprefs_getBCP47Tag(nullptr, 0, &status);
     static char windowsLocale[LOCALE_NAME_MAX_LENGTH] = {};
     size_t length = uprefs_getBCP47Tag(windowsLocale, neededBufferSize, &status);
@@ -1793,40 +1788,13 @@ The leftmost codepage (.xxx) wins.
     // Now we should have a Windows locale name that needs converted to the POSIX style.
     if (length > 0) // If length is 0, then the GetLocaleInfoEx failed.
     {
-        // First we need to go from UTF-16 to char (and also convert from _ to - while we're at it.)
-        char modifiedWindowsLocale[LOCALE_NAME_MAX_LENGTH] = {};
-
-        int32_t i;
-        for (i = 0; i < UPRV_LENGTHOF(modifiedWindowsLocale); i++)
-        {
-            if (windowsLocale[i] == '_')
-            {
-                modifiedWindowsLocale[i] = '-';
-            }
-            else
-            {
-                modifiedWindowsLocale[i] = static_cast<char>(windowsLocale[i]);
-            }
-
-            if (modifiedWindowsLocale[i] == '\0')
-            {
-                break;
-            }
-        }
-
-        if (i >= UPRV_LENGTHOF(modifiedWindowsLocale))
-        {
-            // Ran out of room, can't really happen, maybe we'll be lucky about a matching
-            // locale when tags are dropped
-            modifiedWindowsLocale[UPRV_LENGTHOF(modifiedWindowsLocale) - 1] = '\0';
-        }
 
         // Now normalize the resulting name
         correctedPOSIXLocale = static_cast<char *>(uprv_malloc(POSIX_LOCALE_CAPACITY + 1));
         /* TODO: Should we just exit on memory allocation failure? */
         if (correctedPOSIXLocale)
         {
-            int32_t posixLen = uloc_canonicalize(modifiedWindowsLocale, correctedPOSIXLocale, POSIX_LOCALE_CAPACITY, &status);
+            int32_t posixLen = uloc_canonicalize(windowsLocale, correctedPOSIXLocale, POSIX_LOCALE_CAPACITY, &status);
             if (U_SUCCESS(status))
             {
                 *(correctedPOSIXLocale + posixLen) = 0;
