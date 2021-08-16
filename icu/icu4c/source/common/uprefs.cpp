@@ -39,6 +39,14 @@ constexpr int32_t UPREFS_API_FAILURE = -1;
     {                                                           \
         free(memoryBlock);                                      \
         return value;                                           \
+    }
+
+#define FREE_TWICE_AND_RETURN_VALUE_IF(condition, value, memoryBlock, memoryBlock2) \
+    if(condition)                                                                   \
+    {                                                                               \
+        free(memoryBlock);                                                          \
+        free(memoryBlock2);                                                         \
+        return value;                                                               \
     }  
 
 // -------------------------------------------------------
@@ -435,8 +443,10 @@ UChar *getSortingSystem_impl(UErrorCode* status)
             *status = U_UNSUPPORTED_ERROR;
             return u"";
         }
+        free(NLSsortingSystem);
         return sortingSystem;
     }
+    free(NLSsortingSystem);
     return u"";
 }
 
@@ -510,7 +520,7 @@ UChar *getHourCycle_impl(UErrorCode* status)
         *status = U_INTERNAL_PROGRAM_ERROR;
         return u"";
     }
-
+    free(NLShourCycle);
     return hourCycle;
 }
 
@@ -558,7 +568,7 @@ UPREFS_API size_t U_EXPORT2 uprefs_getLocaleBCP47Tag(char* uprefsBuffer, size_t 
     UChar *languageTag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, UChar*);
     int32_t localeResult = getLocaleBCP47Tag_impl(languageTag, status);
 
-    RETURN_VALUE_IF(U_FAILURE(*status) || localeResult == -1, UPREFS_API_FAILURE);
+    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) || localeResult == -1, UPREFS_API_FAILURE, languageTag);
 
     size_t result = checkBufferCapacityAndCopy(languageTag, uprefsBuffer, bufferSize, status);
     free(languageTag);
@@ -618,7 +628,7 @@ UPREFS_API size_t U_EXPORT2 uprefs_getCurrencyCode(char* uprefsBuffer, size_t bu
     UChar *currency = ALLOCATEMEMORY(4, UChar*);
     int32_t currencyResult = getCurrencyCode_impl(currency, status);
 
-    RETURN_VALUE_IF(U_FAILURE(*status) || currencyResult == -1, UPREFS_API_FAILURE);
+    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) || currencyResult == -1, UPREFS_API_FAILURE, currency);
     
     size_t result = checkBufferCapacityAndCopy(currency, uprefsBuffer, bufferSize, status);
     free(currency);
@@ -688,35 +698,35 @@ UPREFS_API size_t U_EXPORT2 uprefs_getBCP47Tag(char* uprefsBuffer, size_t buffer
 
     UChar *languageTag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, UChar*);
     int32_t localeBCP47Result = getLocaleBCP47Tag_impl(languageTag, status);
-    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) || localeBCP47Result == -1, UPREFS_API_FAILURE, languageTag);
+    FREE_TWICE_AND_RETURN_VALUE_IF(U_FAILURE(*status) || localeBCP47Result == -1, UPREFS_API_FAILURE, languageTag, BCP47Tag);
     u_strcpy(BCP47Tag, languageTag);
     u_strcat(BCP47Tag, u"-u");
     free(languageTag);
 
     UChar *calendar = getCalendarSystem_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
     appendIfDataNotEmpty(BCP47Tag, u"-ca-", calendar, warningGenerated, status);
     
     UChar *sortingSystem = getSortingSystem_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
     appendIfDataNotEmpty(BCP47Tag, u"-co-", sortingSystem, warningGenerated, status);
 
     UChar *currency = ALLOCATEMEMORY(4, UChar*);
     size_t currencyResult = getCurrencyCode_impl(currency, status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR || currencyResult == -1, UPREFS_API_FAILURE);
+    FREE_TWICE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR || currencyResult == -1, UPREFS_API_FAILURE, currency, BCP47Tag);
     appendIfDataNotEmpty(BCP47Tag, u"-cu-", currency, warningGenerated, status);
     free(currency);
 
     UChar *firstDay = getFirstDayOfWeek_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
     appendIfDataNotEmpty(BCP47Tag, u"-fw-", firstDay, warningGenerated, status);
 
     UChar *hourCycle = getHourCycle_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
     appendIfDataNotEmpty(BCP47Tag, u"-hc-", hourCycle, warningGenerated, status);
 
     UChar *measureSystem = getMeasureSystem_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
     appendIfDataNotEmpty(BCP47Tag, u"-ms-", measureSystem, warningGenerated, status);
 
     if(warningGenerated)
