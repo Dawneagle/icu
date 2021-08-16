@@ -41,6 +41,14 @@ constexpr int32_t UPREFS_API_FAILURE = -1;
         return value;                                           \
     }
 
+#define FREE_SET_ERROR_AND_RETURN_VALUE_IF(condition, value, error, memoryBlock) \
+    if(condition)                                                                \
+    {                                                                            \
+        *status = error;                                                         \
+        free(memoryBlock);                                                       \
+        return value;                                                            \
+    }
+
 #define FREE_TWICE_AND_RETURN_VALUE_IF(condition, value, memoryBlock, memoryBlock2) \
     if(condition)                                                                   \
     {                                                                               \
@@ -374,6 +382,7 @@ int32_t getLocaleBCP47Tag_impl(UChar* languageTag, UErrorCode* status)
     }
 
     wchar_t *NLSLocale = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
+    RETURN_FAILURE_WITH_STATUS_IF(NLSLocale == NULL, U_MEMORY_ALLOCATION_ERROR);
     
     int32_t result = GetLocaleInfoAsString(NLSLocale, neededBufferSize, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
 
@@ -418,6 +427,11 @@ UChar *getSortingSystem_impl(UErrorCode* status)
     }
 
     wchar_t *NLSsortingSystem = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
+    if(NLSsortingSystem == NULL)
+    {
+        *status = U_MEMORY_ALLOCATION_ERROR;
+        return u"";
+    }
     int32_t result = GetLocaleInfoAsString(NLSsortingSystem, neededBufferSize, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
 
     if(U_FAILURE(*status) || result == -1)
@@ -460,6 +474,7 @@ int32_t getCurrencyCode_impl(UChar* currency, UErrorCode* status)
     }
     
     wchar_t *NLScurrencyData = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
+    RETURN_FAILURE_WITH_STATUS_IF(NLScurrencyData == NULL, U_MEMORY_ALLOCATION_ERROR);
     int32_t result = GetLocaleInfoAsString(NLScurrencyData, neededBufferSize, LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, status);
     if(U_FAILURE(*status) || result == -1)
     {
@@ -506,6 +521,10 @@ UChar *getHourCycle_impl(UErrorCode* status)
         return u"";
     }
     wchar_t *NLShourCycle = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
+    if(NLShourCycle == NULL)
+    {
+        *status = U_MEMORY_ALLOCATION_ERROR;
+    }
     int32_t result = GetLocaleInfoAsString(NLShourCycle, neededBufferSize, LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, status);
     if(U_FAILURE(*status) || result == -1)
     {
@@ -566,6 +585,7 @@ UPREFS_API size_t U_EXPORT2 uprefs_getLocaleBCP47Tag(char* uprefsBuffer, size_t 
     RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
 
     UChar *languageTag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, UChar*);
+    RETURN_FAILURE_WITH_STATUS_IF(languageTag == NULL, U_MEMORY_ALLOCATION_ERROR);
     int32_t localeResult = getLocaleBCP47Tag_impl(languageTag, status);
 
     FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) || localeResult == -1, UPREFS_API_FAILURE, languageTag);
@@ -626,6 +646,8 @@ UPREFS_API size_t U_EXPORT2 uprefs_getCurrencyCode(char* uprefsBuffer, size_t bu
 
     // Currencies have a maximum length of 3, so we only need to allocate 4 for the null terminator.
     UChar *currency = ALLOCATEMEMORY(4, UChar*);
+    RETURN_FAILURE_WITH_STATUS_IF(currency == NULL, U_MEMORY_ALLOCATION_ERROR);
+
     int32_t currencyResult = getCurrencyCode_impl(currency, status);
 
     FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) || currencyResult == -1, UPREFS_API_FAILURE, currency);
@@ -694,9 +716,11 @@ UPREFS_API size_t U_EXPORT2 uprefs_getBCP47Tag(char* uprefsBuffer, size_t buffer
     RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
 
     UChar *BCP47Tag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, UChar*);
+    RETURN_FAILURE_WITH_STATUS_IF(BCP47Tag == NULL, U_MEMORY_ALLOCATION_ERROR);
     bool warningGenerated = false;
 
     UChar *languageTag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, UChar*);
+    FREE_SET_ERROR_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, U_MEMORY_ALLOCATION_ERROR, BCP47Tag);
     int32_t localeBCP47Result = getLocaleBCP47Tag_impl(languageTag, status);
     FREE_TWICE_AND_RETURN_VALUE_IF(U_FAILURE(*status) || localeBCP47Result == -1, UPREFS_API_FAILURE, languageTag, BCP47Tag);
     u_strcpy(BCP47Tag, languageTag);
@@ -712,6 +736,7 @@ UPREFS_API size_t U_EXPORT2 uprefs_getBCP47Tag(char* uprefsBuffer, size_t buffer
     appendIfDataNotEmpty(BCP47Tag, u"-co-", sortingSystem, warningGenerated, status);
 
     UChar *currency = ALLOCATEMEMORY(4, UChar*);
+    FREE_SET_ERROR_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, U_MEMORY_ALLOCATION_ERROR, BCP47Tag);
     size_t currencyResult = getCurrencyCode_impl(currency, status);
     FREE_TWICE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR || currencyResult == -1, UPREFS_API_FAILURE, currency, BCP47Tag);
     appendIfDataNotEmpty(BCP47Tag, u"-cu-", currency, warningGenerated, status);
