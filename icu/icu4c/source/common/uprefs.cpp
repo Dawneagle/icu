@@ -11,7 +11,6 @@ U_NAMESPACE_USE
 
 constexpr int32_t UPREFS_API_FAILURE = -1;
 
-#define ARRAYLENGTH(array) (int32_t)(sizeof(array)/sizeof(array[0]))
 #define ALLOCATEMEMORY(var, type) (type)uprv_malloc(var * sizeof(type));
 
 #define RETURN_FAILURE_STRING_WITH_STATUS_IF(value, error)      \
@@ -241,7 +240,7 @@ UChar *getMeasureSystemBCP47FromNLSType(int32_t measureSystem)
 void WstrToUChar(UChar* dest, const wchar_t* str, size_t cch, UErrorCode* status) 
 {
     int32_t i;
-    for (i = 0; i <= ARRAYLENGTH(str); i++)
+    for (i = 0; i <= cch; i++)
     {
         *(dest + i) = static_cast<UChar>(*(str + i));
     }
@@ -400,7 +399,7 @@ int32_t getLocaleBCP47Tag_impl(UChar* languageTag, UErrorCode* status)
         position = L"\0";
     }
 
-    WstrToUChar(languageTag, NLSLocale, 0, status);
+    WstrToUChar(languageTag, NLSLocale, neededBufferSize, status);
 
     uprv_free(NLSLocale);
     return 0;
@@ -483,7 +482,7 @@ int32_t getCurrencyCode_impl(UChar* currency, UErrorCode* status)
         return -1;
     }   
 
-    WstrToUChar(currency, NLScurrencyData, 0, status);
+    WstrToUChar(currency, NLScurrencyData, neededBufferSize, status);
     if(u_strlen(currency) == 0)
     {
         uprv_free(NLScurrencyData);
