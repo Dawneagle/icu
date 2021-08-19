@@ -1,6 +1,6 @@
 #include "unicode/utypes.h"
-#include "unicode/umachine.h"
 #include "unicode/ustring.h"
+#include "cmemory.h"
 
 #define UPREFS_API U_CFUNC U_EXPORT
 
