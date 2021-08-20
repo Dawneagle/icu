@@ -17,7 +17,7 @@ constexpr int32_t UPREFS_API_FAILURE = -1;
     if(value)                                                   \
     {                                                           \
         *status = error;                                        \
-        return u"";                                             \
+        return "";                                             \
     }
 
 #define RETURN_FAILURE_WITH_STATUS_IF(condition, error)         \
@@ -77,7 +77,7 @@ constexpr int32_t UPREFS_API_FAILURE = -1;
 // and vice-versa.
 // 
 // NLS CALID reference:https://docs.microsoft.com/en-us/windows/win32/intl/calendar-identifiers
-UChar *getCalendarBCP47FromNLSType(int32_t calendar)
+char *getCalendarBCP47FromNLSType(int32_t calendar)
 {
     switch(calendar){
         case CAL_GREGORIAN:
@@ -86,34 +86,34 @@ UChar *getCalendarBCP47FromNLSType(int32_t calendar)
         case CAL_GREGORIAN_ARABIC:
         case CAL_GREGORIAN_XLIT_ENGLISH:
         case CAL_GREGORIAN_XLIT_FRENCH:
-            return u"gregory\0";
+            return "gregory\0";
 
         case CAL_JAPAN:
-            return u"japanese\0";
+            return "japanese\0";
 
         case CAL_TAIWAN:
-            return u"roc\0";
+            return "roc\0";
 
         case CAL_KOREA:
-            return u"dangi\0";
+            return "dangi\0";
 
         case CAL_HIJRI:
-            return u"islamic\0";
+            return "islamic\0";
 
         case CAL_THAI:
-            return u"buddhist\0";
+            return "buddhist\0";
 
         case CAL_HEBREW:
-            return u"hebrew\0";
+            return "hebrew\0";
 
         case CAL_PERSIAN:
-            return u"persian\0";
+            return "persian\0";
 
         case CAL_UMALQURA:
-            return u"islamic-umalqura\0";
+            return "islamic-umalqura\0";
 
         default:
-            return u"";
+            return "";
     }
 }
 
@@ -132,31 +132,31 @@ UChar *getCalendarBCP47FromNLSType(int32_t calendar)
 // These could be used in a BCP47 tag like this: "de-DE-u-co-phonebk".
 // Note that there are some NLS Alternate sort methods that are not supported with the BCP47 U extensions,
 // and vice-versa.
-UChar *getSortingSystemBCP47FromNLSType(wchar_t* sortingSystem) 
+char *getSortingSystemBCP47FromNLSType(wchar_t* sortingSystem) 
 {
     if (wcscmp(sortingSystem, L"phoneb") == 0) // Phonebook style ordering (such as in German)
     {
-        return u"phonebk";
+        return "phonebk";
     }
     else if (wcscmp(sortingSystem, L"tradnl") == 0) // Traditional style ordering (such as in Spanish)
     {
-        return u"trad";
+        return "trad";
     }
     else if (wcscmp(sortingSystem, L"stroke") == 0) // Pinyin ordering for Latin, stroke order for CJK characters (used in Chinese)
     {
-        return u"stroke";
+        return "stroke";
     }
     else if (wcscmp(sortingSystem, L"radstr") == 0) // Pinyin ordering for Latin, Unihan radical-stroke ordering for CJK characters (used in Chinese)
     {
-        return u"unihan";
+        return "unihan";
     }
     else if (wcscmp(sortingSystem, L"pronun") == 0) // Phonetic ordering (sorting based on pronunciation)
     {
-        return u"phonetic";
+        return "phonetic";
     }
     else 
     {
-        return u"";
+        return "";
     }
 }
 
@@ -176,32 +176,32 @@ UChar *getSortingSystemBCP47FromNLSType(wchar_t* sortingSystem)
 //   6 (Sunday) would return "sun".
 // 
 // These could be used in a BCP47 tag like this: "en-US-u-fw-sun".
-UChar *getFirstDayBCP47FromNLSType(int32_t firstday) 
+char *getFirstDayBCP47FromNLSType(int32_t firstday) 
 {
     switch(firstday){
         case 0:
-            return u"mon";
+            return "mon";
 
         case 1:
-            return u"tue";
+            return "tue";
 
         case 2:
-            return u"wed";
+            return "wed";
 
         case 3:
-            return u"thu";
+            return "thu";
 
         case 4:
-            return u"fri";
+            return "fri";
 
         case 5:
-            return u"sat";
+            return "sat";
 
         case 6:
-            return u"sun";
+            return "sun";
 
         default:
-            return u"";
+            return "";
     }
 }
 
@@ -218,15 +218,15 @@ UChar *getFirstDayBCP47FromNLSType(int32_t firstday)
 //   6 (U.S. System) would return "ussystem".
 // 
 // These could be used in a BCP47 tag like this: "en-US-u-ms-metric".
-UChar *getMeasureSystemBCP47FromNLSType(int32_t measureSystem) 
+char *getMeasureSystemBCP47FromNLSType(int32_t measureSystem) 
 {
     switch(measureSystem){
         case 0:
-            return u"metric";
+            return "metric";
         case 1:
-            return u"ussystem";
+            return "ussystem";
         default:
-            return u"";
+            return "";
     }
 }
 
@@ -237,12 +237,12 @@ UChar *getMeasureSystemBCP47FromNLSType(int32_t measureSystem)
 // -------------------------------------------------------
 // ------------------ HELPER FUCTIONS  -------------------
 // -------------------------------------------------------
-void WstrToUChar(UChar* dest, const wchar_t* str, size_t cch, UErrorCode* status) 
+void WstrToUChar(char* dest, const wchar_t* str, size_t cch, UErrorCode* status) 
 {
     int32_t i;
     for (i = 0; i <= cch; i++)
     {
-        *(dest + i) = static_cast<UChar>(*(str + i));
+        *(dest + i) = static_cast<char>(*(str + i));
     }
     *(dest + i) = '\0';
 }
@@ -250,7 +250,7 @@ void WstrToUChar(UChar* dest, const wchar_t* str, size_t cch, UErrorCode* status
 // Although we could use the CRT upper and lower case functions,
 // these are sensitive to the global CRT locale, and we need to always have invariant casing.
 // Therefore, we use our own toLowercase function.
-inline UChar toLowercase(UChar c)
+inline char toLowercase(char c)
 {
     if (c >= 'A' && c <= 'Z')
     {
@@ -266,7 +266,7 @@ inline UChar toLowercase(UChar c)
 // Note that the NLS string could have sections escaped with single
 // quotes, so be sure to skip those parts. Eg: "'Hours:' h:mm:ss"
 // would skip the "H" in 'Hours' and use the h in the actual pattern.
-UChar *get12_or_24hourFormat(wchar_t* hourFormat)
+char *get12_or_24hourFormat(wchar_t* hourFormat)
 {
     bool isInEscapedString = false;
     for (int i = 0; i < wcslen(hourFormat); i++)
@@ -281,16 +281,16 @@ UChar *get12_or_24hourFormat(wchar_t* hourFormat)
             // Check for both so we can escape early
             if (hourFormat[i] == L'H') 
             {
-                return u"h23";
+                return "h23";
             }
             if (hourFormat[i] == L'h')
             {
-                return u"h12";
+                return "h12";
             }
         }
     }
     // default to a 24 hour clock as that's more common worldwide
-    return u"h23";
+    return "h23";
 }
 
 UErrorCode getUErrorCodeFromLastError()
@@ -357,26 +357,26 @@ int32_t GetLocaleInfoAsInt(PCWSTR localeName, LCTYPE type, UErrorCode* status)
 // Copies a string to a buffer if its size allows it and returns the size.
 // The returned needed buffer size includes the terminating \0 null character.
 // If the buffer's size is set to 0, the needed buffer size is returned before copying the string.
-size_t checkBufferCapacityAndCopy(const UChar* uprefsString, char* uprefsBuffer, size_t bufferSize, UErrorCode* status)
+size_t checkBufferCapacityAndCopy(const char* uprefsString, char* uprefsBuffer, size_t bufferSize, UErrorCode* status)
 {
-    size_t neededBufferSize = u_strlen(uprefsString) + 1;
+    size_t neededBufferSize = strlen(uprefsString) + 1;
 
     RETURN_VALUE_IF(bufferSize == 0, neededBufferSize);
     RETURN_FAILURE_WITH_STATUS_IF(neededBufferSize > bufferSize, U_BUFFER_OVERFLOW_ERROR);
 
-    u_UCharsToChars(uprefsString, uprefsBuffer, static_cast<int>(bufferSize));
+    strcpy(uprefsBuffer, uprefsString);
 
     return neededBufferSize;
 }
 
 
-int32_t getLocaleBCP47Tag_impl(UChar* languageTag, UErrorCode* status)
+int32_t getLocaleBCP47Tag_impl(char* languageTag, UErrorCode* status)
 {
     // First part of a bcp47 tag looks like an NLS user locale, so we get the NLS user locale.
     int32_t neededBufferSize = GetLocaleInfoAsString(nullptr, 0, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
     if(U_FAILURE(*status) || neededBufferSize == -1)
     {
-        languageTag = u"";
+        languageTag = "";
         return -1;
     }
 
@@ -388,7 +388,7 @@ int32_t getLocaleBCP47Tag_impl(UChar* languageTag, UErrorCode* status)
     if(U_FAILURE(*status) || result == -1)
     {
         uprv_free(NLSLocale);
-        languageTag = u"";
+        languageTag = "";
         return -1;
     }
 
@@ -405,38 +405,38 @@ int32_t getLocaleBCP47Tag_impl(UChar* languageTag, UErrorCode* status)
     return 0;
 }
 
-UChar *getCalendarSystem_impl(UErrorCode* status)
+char *getCalendarSystem_impl(UErrorCode* status)
 {
     int32_t NLSCalendar = GetLocaleInfoAsInt(LOCALE_NAME_USER_DEFAULT, LOCALE_ICALENDARTYPE, status);
-    RETURN_VALUE_IF(U_FAILURE(*status), u"");
+    RETURN_VALUE_IF(U_FAILURE(*status), "");
 
-    UChar *calendar(getCalendarBCP47FromNLSType(NLSCalendar));
-    RETURN_FAILURE_STRING_WITH_STATUS_IF(u_strlen(calendar) == 0, U_UNSUPPORTED_ERROR);
+    char *calendar(getCalendarBCP47FromNLSType(NLSCalendar));
+    RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(calendar) == 0, U_UNSUPPORTED_ERROR);
 
     return calendar;
 }
 
-UChar *getSortingSystem_impl(UErrorCode* status)
+char *getSortingSystem_impl(UErrorCode* status)
 {
     // In order to get the sorting system, we need to get LOCALE_SNAME, which appends the sorting system (if any) to the locale
     int32_t neededBufferSize = GetLocaleInfoAsString(nullptr, 0, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
     if(U_FAILURE(*status) || neededBufferSize == -1)
     {
-        return u"";
+        return "";
     }
 
     wchar_t *NLSsortingSystem = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
     if(NLSsortingSystem == NULL)
     {
         *status = U_MEMORY_ALLOCATION_ERROR;
-        return u"";
+        return "";
     }
     int32_t result = GetLocaleInfoAsString(NLSsortingSystem, neededBufferSize, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
 
     if(U_FAILURE(*status) || result == -1)
     {
         uprv_free(NLSsortingSystem);
-        return u"";
+        return "";
     }   
 
     // We use LOCALE_SNAME to get the sorting method (if any). So we need to keep
@@ -448,27 +448,27 @@ UChar *getSortingSystem_impl(UErrorCode* status)
     if (startPosition != nullptr) 
     {
         NLSsortingSystem = startPosition + 1;
-        UChar *sortingSystem(getSortingSystemBCP47FromNLSType(NLSsortingSystem));
+        char *sortingSystem(getSortingSystemBCP47FromNLSType(NLSsortingSystem));
 
-        if(u_strlen(sortingSystem) == 0)
+        if(strlen(sortingSystem) == 0)
         {
             uprv_free(NLSsortingSystem);
             *status = U_UNSUPPORTED_ERROR;
-            return u"";
+            return "";
         }
         uprv_free(NLSsortingSystem);
         return sortingSystem;
     }
     uprv_free(NLSsortingSystem);
-    return u"";
+    return "";
 }
 
-int32_t getCurrencyCode_impl(UChar* currency, UErrorCode* status)
+int32_t getCurrencyCode_impl(char* currency, UErrorCode* status)
 {
     int32_t neededBufferSize = GetLocaleInfoAsString(nullptr, 0, LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, status);
     if(U_FAILURE(*status) || neededBufferSize == -1)
     {
-        currency = u"";
+        currency = "";
         return -1;
     }
     
@@ -478,21 +478,21 @@ int32_t getCurrencyCode_impl(UChar* currency, UErrorCode* status)
     if(U_FAILURE(*status) || result == -1)
     {
         uprv_free(NLScurrencyData);
-        currency = u"";
+        currency = "";
         return -1;
     }   
 
     WstrToUChar(currency, NLScurrencyData, neededBufferSize, status);
-    if(u_strlen(currency) == 0)
+    if(strlen(currency) == 0)
     {
         uprv_free(NLScurrencyData);
         *status = U_INTERNAL_PROGRAM_ERROR;
-        currency = u"";
+        currency = "";
         return -1;
     }
 
     // Since we retreived the currency code in caps, we need to make it lowercase for it to be in CLDR BCP47 U extensions format.
-    for (int i = 0; i < u_strlen(currency); i++)
+    for (int i = 0; i < strlen(currency); i++)
     {
         currency[i] = toLowercase(currency[i]);
     }
@@ -501,23 +501,23 @@ int32_t getCurrencyCode_impl(UChar* currency, UErrorCode* status)
     return 0;
 }
 
-UChar *getFirstDayOfWeek_impl(UErrorCode* status)
+char *getFirstDayOfWeek_impl(UErrorCode* status)
 {
     int32_t NLSfirstDay = GetLocaleInfoAsInt(LOCALE_NAME_USER_DEFAULT, LOCALE_IFIRSTDAYOFWEEK, status);
-    RETURN_VALUE_IF(U_FAILURE(*status), u"");
+    RETURN_VALUE_IF(U_FAILURE(*status), "");
 
-    UChar *firstDay(getFirstDayBCP47FromNLSType(NLSfirstDay));
-    RETURN_FAILURE_STRING_WITH_STATUS_IF(u_strlen(firstDay) == 0, U_UNSUPPORTED_ERROR);
+    char *firstDay(getFirstDayBCP47FromNLSType(NLSfirstDay));
+    RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(firstDay) == 0, U_UNSUPPORTED_ERROR);
 
     return firstDay;
 }
 
-UChar *getHourCycle_impl(UErrorCode* status)
+char *getHourCycle_impl(UErrorCode* status)
 {
     int32_t neededBufferSize = GetLocaleInfoAsString(nullptr, 0, LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, status);
     if(U_FAILURE(*status) || neededBufferSize == -1)
     {
-        return u"";
+        return "";
     }
     wchar_t *NLShourCycle = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
     if(NLShourCycle == NULL)
@@ -528,42 +528,42 @@ UChar *getHourCycle_impl(UErrorCode* status)
     if(U_FAILURE(*status) || result == -1)
     {
         uprv_free(NLShourCycle);
-        return u"";
+        return "";
     }   
 
-    UChar *hourCycle = get12_or_24hourFormat(NLShourCycle);
-    if(u_strlen(hourCycle) == 0)
+    char *hourCycle = get12_or_24hourFormat(NLShourCycle);
+    if(strlen(hourCycle) == 0)
     {
         uprv_free(NLShourCycle);
         *status = U_INTERNAL_PROGRAM_ERROR;
-        return u"";
+        return "";
     }
     uprv_free(NLShourCycle);
     return hourCycle;
 }
 
-UChar *getMeasureSystem_impl(UErrorCode* status)
+char *getMeasureSystem_impl(UErrorCode* status)
 {
     int32_t NLSmeasureSystem = GetLocaleInfoAsInt(LOCALE_NAME_USER_DEFAULT, LOCALE_IMEASURE, status);
-    RETURN_VALUE_IF(U_FAILURE(*status), u"");
+    RETURN_VALUE_IF(U_FAILURE(*status), "");
 
-    UChar *measureSystem(getMeasureSystemBCP47FromNLSType(NLSmeasureSystem));
-    RETURN_FAILURE_STRING_WITH_STATUS_IF(u_strlen(measureSystem) == 0, U_UNSUPPORTED_ERROR);
+    char *measureSystem(getMeasureSystemBCP47FromNLSType(NLSmeasureSystem));
+    RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(measureSystem) == 0, U_UNSUPPORTED_ERROR);
 
     return measureSystem;
 }
 
-void appendIfDataNotEmpty(UChar* dest, const UChar* firstData, const UChar* secondData, bool& warningGenerated, UErrorCode* status)
+void appendIfDataNotEmpty(char* dest, const char* firstData, const char* secondData, bool& warningGenerated, UErrorCode* status)
 {
     if(*status == U_UNSUPPORTED_ERROR)
     {
         warningGenerated = true;
     }
 
-    if(u_strlen(secondData) != 0)
+    if(strlen(secondData) != 0)
     {
-        u_strcat(dest, firstData);
-        u_strcat(dest, secondData);
+        strcat(dest, firstData);
+        strcat(dest, secondData);
     }
 }
 // -------------------------------------------------------
@@ -583,7 +583,7 @@ UPREFS_API size_t U_EXPORT2 uprefs_getLocaleBCP47Tag(char* uprefsBuffer, size_t 
 {
     RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
 
-    UChar *languageTag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, UChar*);
+    char *languageTag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, char*);
     RETURN_FAILURE_WITH_STATUS_IF(languageTag == NULL, U_MEMORY_ALLOCATION_ERROR);
     int32_t localeResult = getLocaleBCP47Tag_impl(languageTag, status);
 
@@ -602,7 +602,7 @@ UPREFS_API size_t U_EXPORT2 uprefs_getCalendarSystem(char* uprefsBuffer, size_t 
 {
     RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
 
-    UChar *calendar = getCalendarSystem_impl(status);
+    char *calendar = getCalendarSystem_impl(status);
 
     RETURN_FAILURE_WITH_STATUS_IF(*status == U_UNSUPPORTED_ERROR, U_UNSUPPORTED_ERROR);
     RETURN_VALUE_IF(U_FAILURE(*status), UPREFS_API_FAILURE);
@@ -620,12 +620,12 @@ UPREFS_API size_t U_EXPORT2 uprefs_getSortingSystem(char* uprefsBuffer, size_t b
 {
     RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
 
-    UChar *sortingSystem = getSortingSystem_impl(status);
+    char *sortingSystem = getSortingSystem_impl(status);
 
     RETURN_FAILURE_WITH_STATUS_IF(*status == U_UNSUPPORTED_ERROR, U_UNSUPPORTED_ERROR);
     RETURN_VALUE_IF(U_FAILURE(*status), UPREFS_API_FAILURE);
 
-    if(u_strlen(sortingSystem) == 0 && bufferSize != 0)
+    if(strlen(sortingSystem) == 0 && bufferSize != 0)
     {
         uprefsBuffer[0] = '\0';
         return 1;
@@ -644,7 +644,7 @@ UPREFS_API size_t U_EXPORT2 uprefs_getCurrencyCode(char* uprefsBuffer, size_t bu
     RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
 
     // Currencies have a maximum length of 3, so we only need to allocate 4 for the null terminator.
-    UChar *currency = ALLOCATEMEMORY(4, UChar*);
+    char *currency = ALLOCATEMEMORY(4, char*);
     RETURN_FAILURE_WITH_STATUS_IF(currency == NULL, U_MEMORY_ALLOCATION_ERROR);
 
     int32_t currencyResult = getCurrencyCode_impl(currency, status);
@@ -664,7 +664,7 @@ UPREFS_API size_t U_EXPORT2 uprefs_getFirstDayOfWeek(char* uprefsBuffer, size_t 
 {
     RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
 
-    UChar *firstDay = getFirstDayOfWeek_impl(status);
+    char *firstDay = getFirstDayOfWeek_impl(status);
 
     RETURN_FAILURE_WITH_STATUS_IF(*status == U_UNSUPPORTED_ERROR, U_UNSUPPORTED_ERROR);
     RETURN_VALUE_IF(U_FAILURE(*status), UPREFS_API_FAILURE);
@@ -682,7 +682,7 @@ UPREFS_API size_t U_EXPORT2 uprefs_getHourCycle(char* uprefsBuffer, size_t buffe
     // for the hour cycle, which will be a string with the user chosen format, and we need to map it to either 'h23' or 'h12'.
     RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
 
-    UChar *hourCycle = getHourCycle_impl(status);
+    char *hourCycle = getHourCycle_impl(status);
 
     RETURN_FAILURE_WITH_STATUS_IF(*status == U_UNSUPPORTED_ERROR, U_UNSUPPORTED_ERROR);
     RETURN_VALUE_IF(U_FAILURE(*status), UPREFS_API_FAILURE);
@@ -698,7 +698,7 @@ UPREFS_API size_t U_EXPORT2 uprefs_getMeasureSystem(char* uprefsBuffer, size_t b
 {
     RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
 
-    UChar *measureSystem = getMeasureSystem_impl(status);
+    char *measureSystem = getMeasureSystem_impl(status);
 
     RETURN_FAILURE_WITH_STATUS_IF(*status == U_UNSUPPORTED_ERROR, U_UNSUPPORTED_ERROR);
     RETURN_VALUE_IF(U_FAILURE(*status), UPREFS_API_FAILURE);
@@ -714,44 +714,44 @@ UPREFS_API size_t U_EXPORT2 uprefs_getBCP47Tag(char* uprefsBuffer, size_t buffer
 {
     RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
 
-    UChar *BCP47Tag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, UChar*);
+    char *BCP47Tag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, char*);
     RETURN_FAILURE_WITH_STATUS_IF(BCP47Tag == NULL, U_MEMORY_ALLOCATION_ERROR);
     bool warningGenerated = false;
 
-    UChar *languageTag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, UChar*);
+    char *languageTag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, char*);
     FREE_SET_ERROR_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, U_MEMORY_ALLOCATION_ERROR, BCP47Tag);
     int32_t localeBCP47Result = getLocaleBCP47Tag_impl(languageTag, status);
     FREE_TWICE_AND_RETURN_VALUE_IF(U_FAILURE(*status) || localeBCP47Result == -1, UPREFS_API_FAILURE, languageTag, BCP47Tag);
-    u_strcpy(BCP47Tag, languageTag);
-    u_strcat(BCP47Tag, u"-u");
+    strcpy(BCP47Tag, languageTag);
+    strcat(BCP47Tag, "-u");
     uprv_free(languageTag);
 
-    UChar *calendar = getCalendarSystem_impl(status);
+    char *calendar = getCalendarSystem_impl(status);
     FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
-    appendIfDataNotEmpty(BCP47Tag, u"-ca-", calendar, warningGenerated, status);
+    appendIfDataNotEmpty(BCP47Tag, "-ca-", calendar, warningGenerated, status);
     
-    UChar *sortingSystem = getSortingSystem_impl(status);
+    char *sortingSystem = getSortingSystem_impl(status);
     FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
-    appendIfDataNotEmpty(BCP47Tag, u"-co-", sortingSystem, warningGenerated, status);
+    appendIfDataNotEmpty(BCP47Tag, "-co-", sortingSystem, warningGenerated, status);
 
-    UChar *currency = ALLOCATEMEMORY(4, UChar*);
+    char *currency = ALLOCATEMEMORY(4, char*);
     FREE_SET_ERROR_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, U_MEMORY_ALLOCATION_ERROR, BCP47Tag);
     size_t currencyResult = getCurrencyCode_impl(currency, status);
     FREE_TWICE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR || currencyResult == -1, UPREFS_API_FAILURE, currency, BCP47Tag);
-    appendIfDataNotEmpty(BCP47Tag, u"-cu-", currency, warningGenerated, status);
+    appendIfDataNotEmpty(BCP47Tag, "-cu-", currency, warningGenerated, status);
     uprv_free(currency);
 
-    UChar *firstDay = getFirstDayOfWeek_impl(status);
+    char *firstDay = getFirstDayOfWeek_impl(status);
     FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
-    appendIfDataNotEmpty(BCP47Tag, u"-fw-", firstDay, warningGenerated, status);
+    appendIfDataNotEmpty(BCP47Tag, "-fw-", firstDay, warningGenerated, status);
 
-    UChar *hourCycle = getHourCycle_impl(status);
+    char *hourCycle = getHourCycle_impl(status);
     FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
-    appendIfDataNotEmpty(BCP47Tag, u"-hc-", hourCycle, warningGenerated, status);
+    appendIfDataNotEmpty(BCP47Tag, "-hc-", hourCycle, warningGenerated, status);
 
-    UChar *measureSystem = getMeasureSystem_impl(status);
+    char *measureSystem = getMeasureSystem_impl(status);
     FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
-    appendIfDataNotEmpty(BCP47Tag, u"-ms-", measureSystem, warningGenerated, status);
+    appendIfDataNotEmpty(BCP47Tag, "-ms-", measureSystem, warningGenerated, status);
 
     if(warningGenerated)
     {
