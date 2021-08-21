@@ -13,11 +13,11 @@ constexpr int32_t UPREFS_API_FAILURE = -1;
 
 #define ALLOCATEMEMORY(var, type) (type)uprv_malloc(var * sizeof(type));
 
-#define RETURN_FAILURE_STRING_WITH_STATUS_IF(value, error)      \
+#define RETURN_FAILURE_STRING_WITH_STATUS_IF(value, error, status)      \
     if(value)                                                   \
     {                                                           \
         *status = error;                                        \
-        return "";                                             \
+        return CharString();                                    \
     }
 
 #define RETURN_FAILURE_WITH_STATUS_IF(condition, error)         \
@@ -32,29 +32,6 @@ constexpr int32_t UPREFS_API_FAILURE = -1;
     {                                                           \
         return value;                                           \
     }                                                           \
-
-#define FREE_AND_RETURN_VALUE_IF(condition, value, memoryBlock) \
-    if(condition)                                               \
-    {                                                           \
-        uprv_free(memoryBlock);                                 \
-        return value;                                           \
-    }
-
-#define FREE_SET_ERROR_AND_RETURN_VALUE_IF(condition, value, error, memoryBlock) \
-    if(condition)                                                                \
-    {                                                                            \
-        *status = error;                                                         \
-        uprv_free(memoryBlock);                                                  \
-        return value;                                                            \
-    }
-
-#define FREE_TWICE_AND_RETURN_VALUE_IF(condition, value, memoryBlock, memoryBlock2) \
-    if(condition)                                                                   \
-    {                                                                               \
-        uprv_free(memoryBlock);                                                     \
-        uprv_free(memoryBlock2);                                                    \
-        return value;                                                               \
-    }  
 
 // -------------------------------------------------------
 // ----------------- MAPPING FUNCTIONS--------------------
@@ -370,26 +347,24 @@ size_t checkBufferCapacityAndCopy(const char* uprefsString, char* uprefsBuffer, 
 }
 
 
-int32_t getLocaleBCP47Tag_impl(char* languageTag, UErrorCode* status)
+CharString getLocaleBCP47Tag_impl(UErrorCode* status)
 {
     // First part of a bcp47 tag looks like an NLS user locale, so we get the NLS user locale.
     int32_t neededBufferSize = GetLocaleInfoAsString(nullptr, 0, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
     if(U_FAILURE(*status) || neededBufferSize == -1)
     {
-        languageTag = "";
-        return -1;
+        return CharString();
     }
 
     wchar_t *NLSLocale = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
-    RETURN_FAILURE_WITH_STATUS_IF(NLSLocale == NULL, U_MEMORY_ALLOCATION_ERROR);
+    RETURN_FAILURE_STRING_WITH_STATUS_IF(NLSLocale == NULL, U_MEMORY_ALLOCATION_ERROR, status);
     
     int32_t result = GetLocaleInfoAsString(NLSLocale, neededBufferSize, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
 
     if(U_FAILURE(*status) || result == -1)
     {
         uprv_free(NLSLocale);
-        languageTag = "";
-        return -1;
+        return CharString();
     }
 
     // The NLS locale may include a non-default sort, such as de-DE_phoneb. We only want the locale name before the _.
@@ -398,45 +373,46 @@ int32_t getLocaleBCP47Tag_impl(char* languageTag, UErrorCode* status)
     {
         position = L"\0";
     }
-
-    WstrToUChar(languageTag, NLSLocale, neededBufferSize, status);
-
+    CharString languageTag;
+    wcstombs(languageTag.data(), NLSLocale, neededBufferSize);
+    // WstrToUChar(languageTag, NLSLocale, neededBufferSize, status);
     uprv_free(NLSLocale);
-    return 0;
+    return languageTag;
+
 }
 
-char *getCalendarSystem_impl(UErrorCode* status)
+CharString getCalendarSystem_impl(UErrorCode* status)
 {
     int32_t NLSCalendar = GetLocaleInfoAsInt(LOCALE_NAME_USER_DEFAULT, LOCALE_ICALENDARTYPE, status);
-    RETURN_VALUE_IF(U_FAILURE(*status), "");
+    RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
-    char *calendar(getCalendarBCP47FromNLSType(NLSCalendar));
-    RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(calendar) == 0, U_UNSUPPORTED_ERROR);
+    CharString calendar(getCalendarBCP47FromNLSType(NLSCalendar), *status);
+    RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(calendar.data()) == 0, U_UNSUPPORTED_ERROR, status);
 
     return calendar;
 }
 
-char *getSortingSystem_impl(UErrorCode* status)
+CharString getSortingSystem_impl(UErrorCode* status)
 {
     // In order to get the sorting system, we need to get LOCALE_SNAME, which appends the sorting system (if any) to the locale
     int32_t neededBufferSize = GetLocaleInfoAsString(nullptr, 0, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
     if(U_FAILURE(*status) || neededBufferSize == -1)
     {
-        return "";
+        return CharString();
     }
 
     wchar_t *NLSsortingSystem = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
     if(NLSsortingSystem == NULL)
     {
         *status = U_MEMORY_ALLOCATION_ERROR;
-        return "";
+        return CharString();
     }
     int32_t result = GetLocaleInfoAsString(NLSsortingSystem, neededBufferSize, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
 
     if(U_FAILURE(*status) || result == -1)
     {
         uprv_free(NLSsortingSystem);
-        return "";
+        return CharString();
     }   
 
     // We use LOCALE_SNAME to get the sorting method (if any). So we need to keep
@@ -448,19 +424,19 @@ char *getSortingSystem_impl(UErrorCode* status)
     if (startPosition != nullptr) 
     {
         NLSsortingSystem = startPosition + 1;
-        char *sortingSystem(getSortingSystemBCP47FromNLSType(NLSsortingSystem));
+        CharString sortingSystem(getSortingSystemBCP47FromNLSType(NLSsortingSystem), *status);
 
-        if(strlen(sortingSystem) == 0)
+        if(strlen(sortingSystem.data()) == 0)
         {
             uprv_free(NLSsortingSystem);
             *status = U_UNSUPPORTED_ERROR;
-            return "";
+            return CharString();
         }
         uprv_free(NLSsortingSystem);
         return sortingSystem;
     }
     uprv_free(NLSsortingSystem);
-    return "";
+    return CharString();
 }
 
 int32_t getCurrencyCode_impl(char* currency, UErrorCode* status)
@@ -501,23 +477,23 @@ int32_t getCurrencyCode_impl(char* currency, UErrorCode* status)
     return 0;
 }
 
-char *getFirstDayOfWeek_impl(UErrorCode* status)
+CharString getFirstDayOfWeek_impl(UErrorCode* status)
 {
     int32_t NLSfirstDay = GetLocaleInfoAsInt(LOCALE_NAME_USER_DEFAULT, LOCALE_IFIRSTDAYOFWEEK, status);
-    RETURN_VALUE_IF(U_FAILURE(*status), "");
+    RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
-    char *firstDay(getFirstDayBCP47FromNLSType(NLSfirstDay));
-    RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(firstDay) == 0, U_UNSUPPORTED_ERROR);
+    CharString firstDay(getFirstDayBCP47FromNLSType(NLSfirstDay), *status);
+    RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(firstDay.data()) == 0, U_UNSUPPORTED_ERROR, status);
 
     return firstDay;
 }
 
-char *getHourCycle_impl(UErrorCode* status)
+CharString getHourCycle_impl(UErrorCode* status)
 {
     int32_t neededBufferSize = GetLocaleInfoAsString(nullptr, 0, LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, status);
     if(U_FAILURE(*status) || neededBufferSize == -1)
     {
-        return "";
+        return CharString();
     }
     wchar_t *NLShourCycle = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
     if(NLShourCycle == NULL)
@@ -528,32 +504,32 @@ char *getHourCycle_impl(UErrorCode* status)
     if(U_FAILURE(*status) || result == -1)
     {
         uprv_free(NLShourCycle);
-        return "";
+        return CharString();
     }   
 
-    char *hourCycle = get12_or_24hourFormat(NLShourCycle);
-    if(strlen(hourCycle) == 0)
+    CharString hourCycle(get12_or_24hourFormat(NLShourCycle), *status);
+    if(strlen(hourCycle.data()) == 0)
     {
         uprv_free(NLShourCycle);
         *status = U_INTERNAL_PROGRAM_ERROR;
-        return "";
+        return CharString();
     }
     uprv_free(NLShourCycle);
     return hourCycle;
 }
 
-char *getMeasureSystem_impl(UErrorCode* status)
+CharString getMeasureSystem_impl(UErrorCode* status)
 {
     int32_t NLSmeasureSystem = GetLocaleInfoAsInt(LOCALE_NAME_USER_DEFAULT, LOCALE_IMEASURE, status);
-    RETURN_VALUE_IF(U_FAILURE(*status), "");
+    RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
-    char *measureSystem(getMeasureSystemBCP47FromNLSType(NLSmeasureSystem));
-    RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(measureSystem) == 0, U_UNSUPPORTED_ERROR);
+    CharString measureSystem(getMeasureSystemBCP47FromNLSType(NLSmeasureSystem), *status);
+    RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(measureSystem.data()) == 0, U_UNSUPPORTED_ERROR, status);
 
     return measureSystem;
 }
 
-void appendIfDataNotEmpty(char* dest, const char* firstData, const char* secondData, bool& warningGenerated, UErrorCode* status)
+void appendIfDataNotEmpty(CharString& dest, const char* firstData, const char* secondData, bool& warningGenerated, UErrorCode* status)
 {
     if(*status == U_UNSUPPORTED_ERROR)
     {
@@ -562,8 +538,8 @@ void appendIfDataNotEmpty(char* dest, const char* firstData, const char* secondD
 
     if(strlen(secondData) != 0)
     {
-        strcat(dest, firstData);
-        strcat(dest, secondData);
+        dest.append(firstData, *status);
+        dest.append(secondData, *status);
     }
 }
 // -------------------------------------------------------
@@ -575,137 +551,6 @@ void appendIfDataNotEmpty(char* dest, const char* firstData, const char* secondD
 // ---------------------- APIs ---------------------------
 // -------------------------------------------------------
 
-// Gets the Locale with script and region (if any) set in the user preferences.
-// Returns the needed buffer size for the locale, including the terminating \0 null character.
-// There is no mapping done in this library between NLS locales and CLDR locale names. That will be done in 
-// a future version of the library.
-UPREFS_API size_t U_EXPORT2 uprefs_getLocaleBCP47Tag(char* uprefsBuffer, size_t bufferSize, UErrorCode* status)
-{
-    RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
-
-    char *languageTag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, char*);
-    RETURN_FAILURE_WITH_STATUS_IF(languageTag == NULL, U_MEMORY_ALLOCATION_ERROR);
-    int32_t localeResult = getLocaleBCP47Tag_impl(languageTag, status);
-
-    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) || localeResult == -1, UPREFS_API_FAILURE, languageTag);
-
-    size_t result = checkBufferCapacityAndCopy(languageTag, uprefsBuffer, bufferSize, status);
-    uprv_free(languageTag);
-    return result;
-}
-
-// Gets the calendar set in the user preferences.
-// This API does not get a valid BCP47 Tag, it only gets the option for the user setting in a CLDR BCP47 U extensions format.
-// Example: Instead of getting "en-US-u-ca-gregory", it will get only "gregory"
-// Returns the needed buffer size for the user preference, including the terminating \0 null character. 
-UPREFS_API size_t U_EXPORT2 uprefs_getCalendarSystem(char* uprefsBuffer, size_t bufferSize, UErrorCode* status)
-{
-    RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
-
-    char *calendar = getCalendarSystem_impl(status);
-
-    RETURN_FAILURE_WITH_STATUS_IF(*status == U_UNSUPPORTED_ERROR, U_UNSUPPORTED_ERROR);
-    RETURN_VALUE_IF(U_FAILURE(*status), UPREFS_API_FAILURE);
-
-    return checkBufferCapacityAndCopy(calendar, uprefsBuffer, bufferSize, status);
-}
-
-
-// Gets sorting system set in the user preferences (if any) 
-// If there is no sorting system set, uprefsBuffer will be empty.
-// This API does not get a valid BCP47 Tag, it only gets the option for the user setting in a CLDR BCP47 U extensions format.
-// Example: Instead of getting "de-DE-u-co-phoneb", it will get only "phoneb"
-// Returns the needed buffer size for the user preference, including the terminating \0 null character.
-UPREFS_API size_t U_EXPORT2 uprefs_getSortingSystem(char* uprefsBuffer, size_t bufferSize, UErrorCode* status)
-{
-    RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
-
-    char *sortingSystem = getSortingSystem_impl(status);
-
-    RETURN_FAILURE_WITH_STATUS_IF(*status == U_UNSUPPORTED_ERROR, U_UNSUPPORTED_ERROR);
-    RETURN_VALUE_IF(U_FAILURE(*status), UPREFS_API_FAILURE);
-
-    if(strlen(sortingSystem) == 0 && bufferSize != 0)
-    {
-        uprefsBuffer[0] = '\0';
-        return 1;
-    }
-    return checkBufferCapacityAndCopy(sortingSystem, uprefsBuffer, bufferSize, status);
-}
-
-// Gets the currency set in the user preferences.
-// This API does not get a valid BCP47 Tag, it only gets the option for the user setting in a CLDR BCP47 U extensions format.
-// Example: Instead of getting "en-US-u-cu-usd", it will get only "usd"
-// Returns the needed buffer size for the user preference, including the terminating \0 null character. 
-UPREFS_API size_t U_EXPORT2 uprefs_getCurrencyCode(char* uprefsBuffer, size_t bufferSize, UErrorCode* status)
-{
-    // Calls GetLocaleInfoExWrapper to get the needed buffer size, and then to retreive the LOCALE_SINTLSYMBOL
-    // for the currency code, that will be in all caps and checks for errors on both calls.
-    RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
-
-    // Currencies have a maximum length of 3, so we only need to allocate 4 for the null terminator.
-    char *currency = ALLOCATEMEMORY(4, char*);
-    RETURN_FAILURE_WITH_STATUS_IF(currency == NULL, U_MEMORY_ALLOCATION_ERROR);
-
-    int32_t currencyResult = getCurrencyCode_impl(currency, status);
-
-    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) || currencyResult == -1, UPREFS_API_FAILURE, currency);
-    
-    size_t result = checkBufferCapacityAndCopy(currency, uprefsBuffer, bufferSize, status);
-    uprv_free(currency);
-    return result;
-}
-
-// Gets the first day of the week set in the user preferences.
-// This API does not get a valid BCP47 Tag, it only gets the option for the user setting in a CLDR BCP47 U extensions format.
-// Example: Instead of getting "en-US-u-fw-mon", it will get only "mon"
-// Returns the needed buffer size for the user preference, including the terminating \0 null character. 
-UPREFS_API size_t U_EXPORT2 uprefs_getFirstDayOfWeek(char* uprefsBuffer, size_t bufferSize, UErrorCode* status)
-{
-    RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
-
-    char *firstDay = getFirstDayOfWeek_impl(status);
-
-    RETURN_FAILURE_WITH_STATUS_IF(*status == U_UNSUPPORTED_ERROR, U_UNSUPPORTED_ERROR);
-    RETURN_VALUE_IF(U_FAILURE(*status), UPREFS_API_FAILURE);
-
-    return checkBufferCapacityAndCopy(firstDay, uprefsBuffer, bufferSize, status);
-}
-
-// Gets the hour cycle set in the user preferences.
-// This API does not get a valid BCP47 Tag, it only gets the option for the user setting in a CLDR BCP47 U extensions format.
-// Example: Instead of getting "en-US-u-hc-h12", it will get only "h12"
-// Returns the needed buffer size for the user preference, including the terminating \0 null character. 
-UPREFS_API size_t U_EXPORT2 uprefs_getHourCycle(char* uprefsBuffer, size_t bufferSize, UErrorCode* status)
-{
-    // Calls GetLocaleInfoExWrapper to get the needed buffer size, and then to retreive the LOCALE_STIMEFORMAT
-    // for the hour cycle, which will be a string with the user chosen format, and we need to map it to either 'h23' or 'h12'.
-    RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
-
-    char *hourCycle = getHourCycle_impl(status);
-
-    RETURN_FAILURE_WITH_STATUS_IF(*status == U_UNSUPPORTED_ERROR, U_UNSUPPORTED_ERROR);
-    RETURN_VALUE_IF(U_FAILURE(*status), UPREFS_API_FAILURE);
-
-    return checkBufferCapacityAndCopy(hourCycle, uprefsBuffer, bufferSize, status);
-}
-
-// Gets the measurement system set in the user preferences.
-// This API does not get a valid BCP47 Tag, it only gets the option for the user setting in a CLDR BCP47 U extensions format.
-// Example: Instead of getting "en-US-u-ms-ussystem", it will get only "ussystem" 
-// Returns the needed buffer size for the user preference, including the terminating \0 null character. 
-UPREFS_API size_t U_EXPORT2 uprefs_getMeasureSystem(char* uprefsBuffer, size_t bufferSize, UErrorCode* status)
-{
-    RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
-
-    char *measureSystem = getMeasureSystem_impl(status);
-
-    RETURN_FAILURE_WITH_STATUS_IF(*status == U_UNSUPPORTED_ERROR, U_UNSUPPORTED_ERROR);
-    RETURN_VALUE_IF(U_FAILURE(*status), UPREFS_API_FAILURE);
-
-    return checkBufferCapacityAndCopy(measureSystem, uprefsBuffer, bufferSize, status);
-}
-
 // Gets the valid and canonical BCP47 tag with the user settings for Language, Calendar, Sorting, Currency,
 // First day of week, Hour cycle, and Measurement system.
 // Calls all of the other APIs
@@ -714,52 +559,46 @@ UPREFS_API size_t U_EXPORT2 uprefs_getBCP47Tag(char* uprefsBuffer, size_t buffer
 {
     RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
 
-    char *BCP47Tag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, char*);
-    RETURN_FAILURE_WITH_STATUS_IF(BCP47Tag == NULL, U_MEMORY_ALLOCATION_ERROR);
+    CharString BCP47Tag;
     bool warningGenerated = false;
 
-    char *languageTag = ALLOCATEMEMORY(LOCALE_NAME_MAX_LENGTH, char*);
-    FREE_SET_ERROR_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, U_MEMORY_ALLOCATION_ERROR, BCP47Tag);
-    int32_t localeBCP47Result = getLocaleBCP47Tag_impl(languageTag, status);
-    FREE_TWICE_AND_RETURN_VALUE_IF(U_FAILURE(*status) || localeBCP47Result == -1, UPREFS_API_FAILURE, languageTag, BCP47Tag);
-    strcpy(BCP47Tag, languageTag);
-    strcat(BCP47Tag, "-u");
-    uprv_free(languageTag);
+    CharString languageTag = getLocaleBCP47Tag_impl(status);
+    RETURN_VALUE_IF(U_FAILURE(*status), UPREFS_API_FAILURE);
+    BCP47Tag.append(languageTag.data(), *status);
+    BCP47Tag.append("-u", *status);
 
-    char *calendar = getCalendarSystem_impl(status);
-    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
-    appendIfDataNotEmpty(BCP47Tag, "-ca-", calendar, warningGenerated, status);
+    CharString calendar = getCalendarSystem_impl(status);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    appendIfDataNotEmpty(BCP47Tag, "-ca-", calendar.data(), warningGenerated, status);
     
-    char *sortingSystem = getSortingSystem_impl(status);
-    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
-    appendIfDataNotEmpty(BCP47Tag, "-co-", sortingSystem, warningGenerated, status);
+    CharString sortingSystem = getSortingSystem_impl(status);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    appendIfDataNotEmpty(BCP47Tag, "-co-", sortingSystem.data(), warningGenerated, status);
 
-    char *currency = ALLOCATEMEMORY(4, char*);
-    FREE_SET_ERROR_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, U_MEMORY_ALLOCATION_ERROR, BCP47Tag);
-    size_t currencyResult = getCurrencyCode_impl(currency, status);
-    FREE_TWICE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR || currencyResult == -1, UPREFS_API_FAILURE, currency, BCP47Tag);
-    appendIfDataNotEmpty(BCP47Tag, "-cu-", currency, warningGenerated, status);
-    uprv_free(currency);
+    CharString currency;
+    size_t currencyResult = getCurrencyCode_impl(currency.data(), status);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR || currencyResult == -1, UPREFS_API_FAILURE);
+    appendIfDataNotEmpty(BCP47Tag, "-cu-", currency.data(), warningGenerated, status);
 
-    char *firstDay = getFirstDayOfWeek_impl(status);
-    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
-    appendIfDataNotEmpty(BCP47Tag, "-fw-", firstDay, warningGenerated, status);
+    CharString firstDay = getFirstDayOfWeek_impl(status);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    appendIfDataNotEmpty(BCP47Tag, "-fw-", firstDay.data(), warningGenerated, status);
 
-    char *hourCycle = getHourCycle_impl(status);
-    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
-    appendIfDataNotEmpty(BCP47Tag, "-hc-", hourCycle, warningGenerated, status);
+    CharString hourCycle = getHourCycle_impl(status);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    appendIfDataNotEmpty(BCP47Tag, "-hc-", hourCycle.data(), warningGenerated, status);
 
-    char *measureSystem = getMeasureSystem_impl(status);
-    FREE_AND_RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE, BCP47Tag);
-    appendIfDataNotEmpty(BCP47Tag, "-ms-", measureSystem, warningGenerated, status);
+    CharString measureSystem = getMeasureSystem_impl(status);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    appendIfDataNotEmpty(BCP47Tag, "-ms-", measureSystem.data(), warningGenerated, status);
 
     if(warningGenerated)
     {
         *status = U_USING_FALLBACK_WARNING;
     }
 
-    size_t result = checkBufferCapacityAndCopy(BCP47Tag, uprefsBuffer, bufferSize, status);
-    uprv_free(BCP47Tag);
+    size_t result = checkBufferCapacityAndCopy(BCP47Tag.data(), uprefsBuffer, bufferSize, status);
+
     return result;
 }
 
