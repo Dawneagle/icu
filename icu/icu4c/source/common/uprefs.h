@@ -1,3 +1,4 @@
+#include "unicode/platform.h"
 #if U_PLATFORM_USES_ONLY_WIN32_API
 #include <windows.h>
 #include "unicode/utypes.h"
