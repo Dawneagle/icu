@@ -1,9 +1,6 @@
 // uprefs.cpp : Implementation of the APIs declared in uprefs.h
-//
 
-#define USE_REAL_ICU_HEADERS
-#define USE_WINDOWS_ICU
-
+#include <windows.h>
 #include "uprefs.h"
 
 U_NAMESPACE_USE

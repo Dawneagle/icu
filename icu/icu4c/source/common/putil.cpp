@@ -1781,9 +1781,9 @@ The leftmost codepage (.xxx) wins.
     UErrorCode status = U_ZERO_ERROR;
     char *correctedPOSIXLocale = nullptr;
 
-    size_t neededBufferSize = uprefs_getBCP47Tag(nullptr, 0, &status);
+    int32_t neededBufferSize = uprefs_getBCP47Tag(nullptr, 0, &status);
     static char windowsLocale[LOCALE_NAME_MAX_LENGTH] = {};
-    size_t length = uprefs_getBCP47Tag(windowsLocale, neededBufferSize, &status);
+    int32_t length = uprefs_getBCP47Tag(windowsLocale, neededBufferSize, &status);
 
     // Now we should have a Windows locale name that needs converted to the POSIX style.
     if (length > 0) // If length is 0, then the GetLocaleInfoEx failed.

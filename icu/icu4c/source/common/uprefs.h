@@ -1,4 +1,3 @@
-#include <windows.h>
 #include "unicode/utypes.h"
 #include "unicode/ustring.h"
 #include "cmemory.h"
