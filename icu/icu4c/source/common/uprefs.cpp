@@ -1,6 +1,5 @@
 // uprefs.cpp : Implementation of the APIs declared in uprefs.h
 
-#include <windows.h>
 #include "uprefs.h"
 
 U_NAMESPACE_USE
@@ -322,7 +321,7 @@ int32_t checkBufferCapacityAndCopy(const char* uprefsString, char* uprefsBuffer,
 {
     size_t neededBufferSize = strlen(uprefsString) + 1;
 
-    RETURN_VALUE_IF(bufferSize == 0, neededBufferSize);
+    RETURN_VALUE_IF(bufferSize == 0, static_cast<int32_t>(neededBufferSize));
     RETURN_FAILURE_WITH_STATUS_IF(neededBufferSize > bufferSize, U_BUFFER_OVERFLOW_ERROR);
 
     strcpy(uprefsBuffer, uprefsString);
