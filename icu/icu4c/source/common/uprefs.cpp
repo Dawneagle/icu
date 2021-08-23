@@ -80,9 +80,6 @@ CharString getCalendarBCP47FromNLSType(int32_t calendar, UErrorCode* status)
         case CAL_HEBREW:
             return CharString("hebrew", *status);
 
-        case CAL_PERSIAN:
-            return CharString("persian", *status);
-
         case CAL_UMALQURA:
             return CharString("islamic-umalqura", *status);
 
@@ -211,7 +208,7 @@ CharString getMeasureSystemBCP47FromNLSType(int32_t measureSystem, UErrorCode *s
 // -------------------------------------------------------
 // ------------------ HELPER FUCTIONS  -------------------
 // -------------------------------------------------------
-void WstrToUChar(char* dest, const wchar_t* str, size_t cch, UErrorCode* status) 
+void WstrToUChar(char* dest, const wchar_t* str, size_t cch) 
 {
     int32_t i;
     for (i = 0; i <= cch; i++)
@@ -292,9 +289,9 @@ int32_t GetLocaleInfoAsString(wchar_t* dataBuffer, int32_t bufferSize, PCWSTR lo
 {
     int32_t neededBufferSize = GetLocaleInfoExWrapper(localeName, type, nullptr, 0, status);
     RETURN_VALUE_IF(neededBufferSize < 0, -1);
-    RETURN_VALUE_IF(dataBuffer == nullptr, neededBufferSize);
+    RETURN_VALUE_IF(dataBuffer == nullptr || bufferSize == 0, neededBufferSize);
 
-    int32_t result = GetLocaleInfoExWrapper(localeName, type, dataBuffer, neededBufferSize, status);
+    int32_t result = GetLocaleInfoExWrapper(localeName, type, dataBuffer, bufferSize, status);
     RETURN_VALUE_IF(result < 0, -1);
 
     return neededBufferSize;
@@ -307,11 +304,11 @@ int32_t GetLocaleInfoAsString(wchar_t* dataBuffer, int32_t bufferSize, PCWSTR lo
 int32_t GetLocaleInfoAsInt(PCWSTR localeName, LCTYPE type, UErrorCode* status)
 {
     int32_t result = 0;
-    int32_t neededBufferSize = GetLocaleInfoExWrapper(localeName, 
-                                                      type | LOCALE_RETURN_NUMBER, 
-                                                      reinterpret_cast<PWSTR>(&result), 
-                                                      sizeof(result) / sizeof(wchar_t), 
-                                                      status);
+    GetLocaleInfoExWrapper(localeName, 
+                           type | LOCALE_RETURN_NUMBER, 
+                           reinterpret_cast<PWSTR>(&result), 
+                           sizeof(result) / sizeof(wchar_t), 
+                           status);
 
     return result;
 }
@@ -443,7 +440,7 @@ int32_t getCurrencyCode_impl(char* currency, UErrorCode* status)
         return -1;
     }   
 
-    WstrToUChar(currency, NLScurrencyData, neededBufferSize, status);
+    WstrToUChar(currency, NLScurrencyData, neededBufferSize);
     if(strlen(currency) == 0)
     {
         uprv_free(NLScurrencyData);
