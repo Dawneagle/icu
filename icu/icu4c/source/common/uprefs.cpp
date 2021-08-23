@@ -1,3 +1,5 @@
+#if U_PLATFORM_USES_ONLY_WIN32_API
+
 // uprefs.cpp : Implementation of the APIs declared in uprefs.h
 
 #include "uprefs.h"
@@ -49,7 +51,7 @@ constexpr int32_t UPREFS_API_FAILURE = -1;
 // and vice-versa.
 // 
 // NLS CALID reference:https://docs.microsoft.com/en-us/windows/win32/intl/calendar-identifiers
-char *getCalendarBCP47FromNLSType(int32_t calendar)
+CharString getCalendarBCP47FromNLSType(int32_t calendar, UErrorCode* status)
 {
     switch(calendar){
         case CAL_GREGORIAN:
@@ -58,34 +60,34 @@ char *getCalendarBCP47FromNLSType(int32_t calendar)
         case CAL_GREGORIAN_ARABIC:
         case CAL_GREGORIAN_XLIT_ENGLISH:
         case CAL_GREGORIAN_XLIT_FRENCH:
-            return "gregory\0";
+            return CharString("gregory", *status);
 
         case CAL_JAPAN:
-            return "japanese\0";
+            return CharString("japanese", *status);
 
         case CAL_TAIWAN:
-            return "roc\0";
+            return CharString("roc", *status);
 
         case CAL_KOREA:
-            return "dangi\0";
+            return CharString("dangi", *status);
 
         case CAL_HIJRI:
-            return "islamic\0";
+            return CharString("islamic", *status);
 
         case CAL_THAI:
-            return "buddhist\0";
+            return CharString("buddhist", *status);
 
         case CAL_HEBREW:
-            return "hebrew\0";
+            return CharString("hebrew", *status);
 
         case CAL_PERSIAN:
-            return "persian\0";
+            return CharString("persian", *status);
 
         case CAL_UMALQURA:
-            return "islamic-umalqura\0";
+            return CharString("islamic-umalqura", *status);
 
         default:
-            return "";
+            return CharString();
     }
 }
 
@@ -104,31 +106,31 @@ char *getCalendarBCP47FromNLSType(int32_t calendar)
 // These could be used in a BCP47 tag like this: "de-DE-u-co-phonebk".
 // Note that there are some NLS Alternate sort methods that are not supported with the BCP47 U extensions,
 // and vice-versa.
-char *getSortingSystemBCP47FromNLSType(wchar_t* sortingSystem) 
+CharString getSortingSystemBCP47FromNLSType(wchar_t* sortingSystem, UErrorCode* status) 
 {
     if (wcscmp(sortingSystem, L"phoneb") == 0) // Phonebook style ordering (such as in German)
     {
-        return "phonebk";
+        return CharString("phonebk", *status);
     }
     else if (wcscmp(sortingSystem, L"tradnl") == 0) // Traditional style ordering (such as in Spanish)
     {
-        return "trad";
+        return CharString("trad", *status);
     }
     else if (wcscmp(sortingSystem, L"stroke") == 0) // Pinyin ordering for Latin, stroke order for CJK characters (used in Chinese)
     {
-        return "stroke";
+        return CharString("stroke", *status);
     }
     else if (wcscmp(sortingSystem, L"radstr") == 0) // Pinyin ordering for Latin, Unihan radical-stroke ordering for CJK characters (used in Chinese)
     {
-        return "unihan";
+        return CharString("unihan", *status);
     }
     else if (wcscmp(sortingSystem, L"pronun") == 0) // Phonetic ordering (sorting based on pronunciation)
     {
-        return "phonetic";
+        return CharString("phonetic", *status);
     }
     else 
     {
-        return "";
+        return CharString();
     }
 }
 
@@ -148,32 +150,32 @@ char *getSortingSystemBCP47FromNLSType(wchar_t* sortingSystem)
 //   6 (Sunday) would return "sun".
 // 
 // These could be used in a BCP47 tag like this: "en-US-u-fw-sun".
-char *getFirstDayBCP47FromNLSType(int32_t firstday) 
+CharString getFirstDayBCP47FromNLSType(int32_t firstday, UErrorCode* status) 
 {
     switch(firstday){
         case 0:
-            return "mon";
+            return CharString("mon", *status);
 
         case 1:
-            return "tue";
+            return CharString("tue", *status);
 
         case 2:
-            return "wed";
+            return CharString("wed", *status);
 
         case 3:
-            return "thu";
+            return CharString("thu", *status);
 
         case 4:
-            return "fri";
+            return CharString("fri", *status);
 
         case 5:
-            return "sat";
+            return CharString("sat", *status);
 
         case 6:
-            return "sun";
+            return CharString("sun", *status);
 
         default:
-            return "";
+            return CharString();
     }
 }
 
@@ -190,15 +192,15 @@ char *getFirstDayBCP47FromNLSType(int32_t firstday)
 //   6 (U.S. System) would return "ussystem".
 // 
 // These could be used in a BCP47 tag like this: "en-US-u-ms-metric".
-char *getMeasureSystemBCP47FromNLSType(int32_t measureSystem) 
+CharString getMeasureSystemBCP47FromNLSType(int32_t measureSystem, UErrorCode *status) 
 {
     switch(measureSystem){
         case 0:
-            return "metric";
+            return CharString("metric", *status);
         case 1:
-            return "ussystem";
+            return CharString("ussystem", *status);
         default:
-            return "";
+            return CharString();
     }
 }
 
@@ -226,7 +228,7 @@ void WstrToUChar(char* dest, const wchar_t* str, size_t cch, UErrorCode* status)
 // Note that the NLS string could have sections escaped with single
 // quotes, so be sure to skip those parts. Eg: "'Hours:' h:mm:ss"
 // would skip the "H" in 'Hours' and use the h in the actual pattern.
-char *get12_or_24hourFormat(wchar_t* hourFormat)
+CharString get12_or_24hourFormat(wchar_t* hourFormat, UErrorCode* status)
 {
     bool isInEscapedString = false;
     for (int i = 0; i < wcslen(hourFormat); i++)
@@ -241,16 +243,16 @@ char *get12_or_24hourFormat(wchar_t* hourFormat)
             // Check for both so we can escape early
             if (hourFormat[i] == L'H') 
             {
-                return "h23";
+                return CharString("h23", *status);
             }
             if (hourFormat[i] == L'h')
             {
-                return "h12";
+                return CharString("h12", *status);
             }
         }
     }
     // default to a 24 hour clock as that's more common worldwide
-    return "h23";
+    return CharString("h23", *status);
 }
 
 UErrorCode getUErrorCodeFromLastError()
@@ -369,7 +371,7 @@ CharString getCalendarSystem_impl(UErrorCode* status)
     int32_t NLSCalendar = GetLocaleInfoAsInt(LOCALE_NAME_USER_DEFAULT, LOCALE_ICALENDARTYPE, status);
     RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
-    CharString calendar(getCalendarBCP47FromNLSType(NLSCalendar), *status);
+    CharString calendar(getCalendarBCP47FromNLSType(NLSCalendar, status), *status);
     RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(calendar.data()) == 0, U_UNSUPPORTED_ERROR, status);
 
     return calendar;
@@ -407,7 +409,7 @@ CharString getSortingSystem_impl(UErrorCode* status)
     if (startPosition != nullptr) 
     {
         NLSsortingSystem = startPosition + 1;
-        CharString sortingSystem(getSortingSystemBCP47FromNLSType(NLSsortingSystem), *status);
+        CharString sortingSystem = getSortingSystemBCP47FromNLSType(NLSsortingSystem, status);
 
         if(strlen(sortingSystem.data()) == 0)
         {
@@ -462,7 +464,7 @@ CharString getFirstDayOfWeek_impl(UErrorCode* status)
     int32_t NLSfirstDay = GetLocaleInfoAsInt(LOCALE_NAME_USER_DEFAULT, LOCALE_IFIRSTDAYOFWEEK, status);
     RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
-    CharString firstDay(getFirstDayBCP47FromNLSType(NLSfirstDay), *status);
+    CharString firstDay = getFirstDayBCP47FromNLSType(NLSfirstDay, status);
     RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(firstDay.data()) == 0, U_UNSUPPORTED_ERROR, status);
 
     return firstDay;
@@ -487,7 +489,7 @@ CharString getHourCycle_impl(UErrorCode* status)
         return CharString();
     }   
 
-    CharString hourCycle(get12_or_24hourFormat(NLShourCycle), *status);
+    CharString hourCycle = get12_or_24hourFormat(NLShourCycle, status);
     if(strlen(hourCycle.data()) == 0)
     {
         uprv_free(NLShourCycle);
@@ -503,7 +505,7 @@ CharString getMeasureSystem_impl(UErrorCode* status)
     int32_t NLSmeasureSystem = GetLocaleInfoAsInt(LOCALE_NAME_USER_DEFAULT, LOCALE_IMEASURE, status);
     RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
-    CharString measureSystem(getMeasureSystemBCP47FromNLSType(NLSmeasureSystem), *status);
+    CharString measureSystem = getMeasureSystemBCP47FromNLSType(NLSmeasureSystem, status);
     RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(measureSystem.data()) == 0, U_UNSUPPORTED_ERROR, status);
 
     return measureSystem;
@@ -585,3 +587,5 @@ int32_t uprefs_getBCP47Tag(char* uprefsBuffer, int32_t bufferSize, UErrorCode* s
 // -------------------------------------------------------
 // ---------------------- END OF APIs --------------------
 // -------------------------------------------------------
+
+#endif
