@@ -1,8 +1,8 @@
-#if U_PLATFORM_USES_ONLY_WIN32_API
 
 // uprefs.cpp : Implementation of the APIs declared in uprefs.h
 
 #include "uprefs.h"
+#if U_PLATFORM_USES_ONLY_WIN32_API
 
 U_NAMESPACE_USE
 
