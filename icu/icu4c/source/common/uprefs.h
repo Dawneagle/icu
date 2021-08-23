@@ -1,3 +1,4 @@
+#if U_PLATFORM_USES_ONLY_WIN32_API
 #include <windows.h>
 #include "unicode/utypes.h"
 #include "unicode/ustring.h"
@@ -23,3 +24,4 @@
 *         if status was not U_ZERO_ERROR.
 */
 int32_t uprefs_getBCP47Tag(char* uprefsBuffer, int32_t bufferSize, UErrorCode* status);
+#endif
