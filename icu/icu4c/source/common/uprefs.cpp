@@ -4,7 +4,6 @@
 #define USE_REAL_ICU_HEADERS
 #define USE_WINDOWS_ICU
 
-#include <windows.h>
 #include "uprefs.h"
 
 U_NAMESPACE_USE
@@ -224,18 +223,6 @@ void WstrToUChar(char* dest, const wchar_t* str, size_t cch, UErrorCode* status)
     *(dest + i) = '\0';
 }
 
-// Although we could use the CRT upper and lower case functions,
-// these are sensitive to the global CRT locale, and we need to always have invariant casing.
-// Therefore, we use our own toLowercase function.
-inline char toLowercase(char c)
-{
-    if (c >= 'A' && c <= 'Z')
-    {
-        return c + 32;
-    }
-    return c;
-}
-
 // Return the CLDR "h12" or "h23" format for the 12 or 24 hour clock.
 // NLS only gives us a "time format" of a form similar to "h:mm:ss tt"
 // The NLS "h" is 12 hour, and "H" is 24 hour, so we'll scan for the
@@ -334,7 +321,7 @@ int32_t GetLocaleInfoAsInt(PCWSTR localeName, LCTYPE type, UErrorCode* status)
 // Copies a string to a buffer if its size allows it and returns the size.
 // The returned needed buffer size includes the terminating \0 null character.
 // If the buffer's size is set to 0, the needed buffer size is returned before copying the string.
-size_t checkBufferCapacityAndCopy(const char* uprefsString, char* uprefsBuffer, size_t bufferSize, UErrorCode* status)
+int32_t checkBufferCapacityAndCopy(const char* uprefsString, char* uprefsBuffer, int32_t bufferSize, UErrorCode* status)
 {
     size_t neededBufferSize = strlen(uprefsString) + 1;
 
@@ -343,7 +330,7 @@ size_t checkBufferCapacityAndCopy(const char* uprefsString, char* uprefsBuffer, 
 
     strcpy(uprefsBuffer, uprefsString);
 
-    return neededBufferSize;
+    return static_cast<int32_t>(neededBufferSize);
 }
 
 
@@ -468,10 +455,7 @@ int32_t getCurrencyCode_impl(char* currency, UErrorCode* status)
     }
 
     // Since we retreived the currency code in caps, we need to make it lowercase for it to be in CLDR BCP47 U extensions format.
-    for (int i = 0; i < strlen(currency); i++)
-    {
-        currency[i] = toLowercase(currency[i]);
-    }
+    T_CString_toLowerCase(currency);
 
     uprv_free(NLScurrencyData);
     return 0;
@@ -555,7 +539,7 @@ void appendIfDataNotEmpty(CharString& dest, const char* firstData, const char* s
 // First day of week, Hour cycle, and Measurement system.
 // Calls all of the other APIs
 // Returns the needed buffer size for the BCP47 Tag. 
-UPREFS_API size_t U_EXPORT2 uprefs_getBCP47Tag(char* uprefsBuffer, size_t bufferSize, UErrorCode* status)
+int32_t uprefs_getBCP47Tag(char* uprefsBuffer, int32_t bufferSize, UErrorCode* status)
 {
     RETURN_FAILURE_WITH_STATUS_IF(uprefsBuffer == nullptr && bufferSize != 0, U_ILLEGAL_ARGUMENT_ERROR);
 
@@ -597,7 +581,7 @@ UPREFS_API size_t U_EXPORT2 uprefs_getBCP47Tag(char* uprefsBuffer, size_t buffer
         *status = U_USING_FALLBACK_WARNING;
     }
 
-    size_t result = checkBufferCapacityAndCopy(BCP47Tag.data(), uprefsBuffer, bufferSize, status);
+    int32_t result = checkBufferCapacityAndCopy(BCP47Tag.data(), uprefsBuffer, bufferSize, status);
 
     return result;
 }

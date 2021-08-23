@@ -1,7 +1,9 @@
+#include <windows.h>
 #include "unicode/utypes.h"
 #include "unicode/ustring.h"
 #include "cmemory.h"
 #include "charstr.h"
+#include "cstring.h"
 
 #define UPREFS_API U_CFUNC U_EXPORT
 
@@ -20,4 +22,4 @@
 * @return The needed buffer size, including the terminating \0 null character if the call was successful, should be ignored 
 *         if status was not U_ZERO_ERROR.
 */
-UPREFS_API size_t U_EXPORT2 uprefs_getBCP47Tag(char* uprefsBuffer, size_t bufferSize, UErrorCode* status);
+int32_t uprefs_getBCP47Tag(char* uprefsBuffer, int32_t bufferSize, UErrorCode* status);
