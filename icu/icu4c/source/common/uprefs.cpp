@@ -80,6 +80,9 @@ CharString getCalendarBCP47FromNLSType(int32_t calendar, UErrorCode* status)
         case CAL_HEBREW:
             return CharString("hebrew", *status);
 
+        case CAL_PERSIAN:
+            return CharString("persian", *status);
+
         case CAL_UMALQURA:
             return CharString("islamic-umalqura", *status);
 
