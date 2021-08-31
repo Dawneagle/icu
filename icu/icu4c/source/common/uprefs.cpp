@@ -8,6 +8,9 @@ U_NAMESPACE_USE
 
 constexpr int32_t UPREFS_API_FAILURE = -1;
 
+// We currently have some CI builds that use MSYS2 and GCC. MSYS is currently setup to use
+// the Windows 7 SDK. CAL_PERSIAN was added to the SDK after that version, so we need to 
+// define it ourselves, since not having it will produce build failures. 
 #ifndef CAL_PERSIAN
 #define CAL_PERSIAN                    22     // Persian (Solar Hijri) calendar
 #endif
@@ -295,23 +298,6 @@ int32_t GetLocaleInfoExWrapper(LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCD
     return result;
 }
 
-// Get data from GetLocaleInfoEx as an int for cases such as Calendar, First day of the week, and Measurement system
-// This only works for LCTYPEs that start with LOCALE_I, such as LOCALE_IFIRSTDAYOFWEEK or LOCALE_ICALENDARTYPE,
-// it will not work for LCTYPEs that start with LOCALE_S, such as LOCALE_SNAME or LOCALE_SINTLSYMBOL
-// This allows us to then use defined constants such as CAL_GREGORIAN, and avoid unneeded allocations.
-int32_t GetLocaleInfoAsInt(PCWSTR localeName, LCTYPE type, UErrorCode* status)
-{
-    int32_t result = 0;
-    GetLocaleInfoExWrapper(
-                           localeName, 
-                           type | LOCALE_RETURN_NUMBER, 
-                           reinterpret_cast<PWSTR>(&result), 
-                           sizeof(result) / sizeof(wchar_t), 
-                           status);
-
-    return result;
-}
-
 // Copies a string to a buffer if its size allows it and returns the size.
 // The returned needed buffer size includes the terminating \0 null character.
 // If the buffer's size is set to 0, the needed buffer size is returned before copying the string.
@@ -326,7 +312,6 @@ int32_t checkBufferCapacityAndCopy(const char* uprefsString, char* uprefsBuffer,
 
     return static_cast<int32_t>(neededBufferSize);
 }
-
 
 CharString getLocaleBCP47Tag_impl(UErrorCode* status)
 {
@@ -360,12 +345,14 @@ CharString getLocaleBCP47Tag_impl(UErrorCode* status)
     // WstrToUChar(languageTag, NLSLocale, neededBufferSize, status);
     uprv_free(NLSLocale);
     return languageTag;
-
 }
 
 CharString getCalendarSystem_impl(UErrorCode* status)
 {
-    int32_t NLSCalendar = GetLocaleInfoAsInt(LOCALE_NAME_USER_DEFAULT, LOCALE_ICALENDARTYPE, status);
+    int32_t NLSCalendar = 0;
+
+    GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_ICALENDARTYPE | LOCALE_RETURN_NUMBER, reinterpret_cast<PWSTR>(&NLSCalendar), sizeof(NLSCalendar) / sizeof(wchar_t), status);
+
     RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
     CharString calendar(getCalendarBCP47FromNLSType(NLSCalendar, status), *status);
@@ -461,7 +448,9 @@ int32_t getCurrencyCode_impl(char* currency, UErrorCode* status)
 
 CharString getFirstDayOfWeek_impl(UErrorCode* status)
 {
-    int32_t NLSfirstDay = GetLocaleInfoAsInt(LOCALE_NAME_USER_DEFAULT, LOCALE_IFIRSTDAYOFWEEK, status);
+    int32_t NLSfirstDay = 0;
+    GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_IFIRSTDAYOFWEEK | LOCALE_RETURN_NUMBER, reinterpret_cast<PWSTR>(&NLSfirstDay), sizeof(NLSfirstDay) / sizeof(wchar_t), status);
+
     RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
     CharString firstDay = getFirstDayBCP47FromNLSType(NLSfirstDay, status);
@@ -504,7 +493,9 @@ CharString getHourCycle_impl(UErrorCode* status)
 
 CharString getMeasureSystem_impl(UErrorCode* status)
 {
-    int32_t NLSmeasureSystem = GetLocaleInfoAsInt(LOCALE_NAME_USER_DEFAULT, LOCALE_IMEASURE, status);
+    int32_t NLSmeasureSystem = 0;
+    GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_IMEASURE | LOCALE_RETURN_NUMBER, reinterpret_cast<PWSTR>(&NLSmeasureSystem), sizeof(NLSmeasureSystem) / sizeof(wchar_t), status);
+    
     RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
     CharString measureSystem = getMeasureSystemBCP47FromNLSType(NLSmeasureSystem, status);
