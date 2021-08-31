@@ -15,9 +15,6 @@ constexpr int32_t UPREFS_API_FAILURE = -1;
 #define CAL_PERSIAN                    22     // Persian (Solar Hijri) calendar
 #endif
 
-
-#define ALLOCATEMEMORY(var, type) (type)uprv_malloc(var * sizeof(type));
-
 #define RETURN_FAILURE_STRING_WITH_STATUS_IF(value, error, status)      \
     if(value)                                                   \
     {                                                           \
@@ -37,6 +34,31 @@ constexpr int32_t UPREFS_API_FAILURE = -1;
     {                                                           \
         return value;                                           \
     }                                                           \
+
+
+class WCharString
+{
+    private:
+        wchar_t* string = nullptr;
+    public:
+        WCharString(int neededMemory)
+        {
+            string = static_cast<wchar_t*>(uprv_malloc(neededMemory * sizeof(wchar_t)));
+        }
+        void CopyString(wchar_t* src, size_t neededMemory)
+        {
+            string = static_cast<wchar_t*>(uprv_malloc(neededMemory * sizeof(wchar_t)));
+            uprv_memcpy(string, src, neededMemory * sizeof(wchar_t));
+        }
+        ~WCharString()
+        {
+            uprv_free(string);
+        }
+        wchar_t* data()
+        {
+            return string;
+        }
+};
 
 // -------------------------------------------------------
 // ----------------- MAPPING FUNCTIONS--------------------
@@ -222,15 +244,6 @@ CharString getMeasureSystemBCP47FromNLSType(int32_t measureSystem, UErrorCode *s
 // -------------------------------------------------------
 // ------------------ HELPER FUCTIONS  -------------------
 // -------------------------------------------------------
-void WstrToUChar(char* dest, const wchar_t* str, size_t cch) 
-{
-    int32_t i;
-    for (i = 0; i <= cch; i++)
-    {
-        *(dest + i) = static_cast<char>(*(str + i));
-    }
-    *(dest + i) = '\0';
-}
 
 // Return the CLDR "h12" or "h23" format for the 12 or 24 hour clock.
 // NLS only gives us a "time format" of a form similar to "h:mm:ss tt"
@@ -323,27 +336,24 @@ CharString getLocaleBCP47Tag_impl(UErrorCode* status)
         return CharString();
     }
 
-    wchar_t *NLSLocale = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
-    RETURN_FAILURE_STRING_WITH_STATUS_IF(NLSLocale == NULL, U_MEMORY_ALLOCATION_ERROR, status);
+    WCharString NLSLocale(neededBufferSize);
+    RETURN_FAILURE_STRING_WITH_STATUS_IF(NLSLocale.data() == NULL, U_MEMORY_ALLOCATION_ERROR, status);
     
-    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSLocale, neededBufferSize, status);
+    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSLocale.data(), neededBufferSize, status);
 
     if(U_FAILURE(*status) || result == -1)
     {
-        uprv_free(NLSLocale);
         return CharString();
     }
 
     // The NLS locale may include a non-default sort, such as de-DE_phoneb. We only want the locale name before the _.
-    wchar_t * position = wcsstr(NLSLocale, L"_");
+    wchar_t * position = wcsstr(NLSLocale.data(), L"_");
     if (position != nullptr)
     {
         position = L"\0";
     }
     CharString languageTag;
-    wcstombs(languageTag.data(), NLSLocale, neededBufferSize);
-    // WstrToUChar(languageTag, NLSLocale, neededBufferSize, status);
-    uprv_free(NLSLocale);
+    wcstombs(languageTag.data(), NLSLocale.data(), neededBufferSize);
     return languageTag;
 }
 
@@ -371,41 +381,37 @@ CharString getSortingSystem_impl(UErrorCode* status)
         return CharString();
     }
 
-    wchar_t *NLSsortingSystem = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
-    if(NLSsortingSystem == NULL)
+    WCharString NLSsortingSystem(neededBufferSize);
+    if(NLSsortingSystem.data() == NULL)
     {
         *status = U_MEMORY_ALLOCATION_ERROR;
         return CharString();
     }
-    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSsortingSystem, neededBufferSize, status);
+    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSsortingSystem.data(), neededBufferSize, status);
 
     if(U_FAILURE(*status) || result == -1)
     {
-        uprv_free(NLSsortingSystem);
         return CharString();
     }   
 
     // We use LOCALE_SNAME to get the sorting method (if any). So we need to keep
     // only the sorting bit after the _, removing the locale name.
     // Example: from "de-DE_phoneb" we only want "phoneb"
-    wchar_t * startPosition = wcsstr(NLSsortingSystem, L"_");
+    wchar_t * startPosition = wcsstr(NLSsortingSystem.data(), L"_");
 
     // Note: not finding a "_" is not an error, it means the user has not selected an alternate sorting method, which is fine.
     if (startPosition != nullptr) 
     {
-        NLSsortingSystem = startPosition + 1;
-        CharString sortingSystem = getSortingSystemBCP47FromNLSType(NLSsortingSystem, status);
+        NLSsortingSystem.CopyString(startPosition + 1, wcslen(startPosition + 1));
+        CharString sortingSystem = getSortingSystemBCP47FromNLSType(NLSsortingSystem.data(), status);
 
         if(strlen(sortingSystem.data()) == 0)
         {
-            uprv_free(NLSsortingSystem);
             *status = U_UNSUPPORTED_ERROR;
             return CharString();
         }
-        uprv_free(NLSsortingSystem);
         return sortingSystem;
     }
-    uprv_free(NLSsortingSystem);
     return CharString();
 }
 
@@ -419,21 +425,19 @@ int32_t getCurrencyCode_impl(char* currency, UErrorCode* status)
         return -1;
     }
     
-    wchar_t *NLScurrencyData = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
-    RETURN_FAILURE_WITH_STATUS_IF(NLScurrencyData == NULL, U_MEMORY_ALLOCATION_ERROR);
-    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, NLScurrencyData, neededBufferSize, status);
+    WCharString NLScurrencyData(neededBufferSize);
+    RETURN_FAILURE_WITH_STATUS_IF(NLScurrencyData.data() == NULL, U_MEMORY_ALLOCATION_ERROR);
+    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, NLScurrencyData.data(), neededBufferSize, status);
 
     if(U_FAILURE(*status) || result == -1)
     {
-        uprv_free(NLScurrencyData);
         currency = "";
         return -1;
     }   
+    wcstombs(currency, NLScurrencyData.data(), neededBufferSize);
 
-    WstrToUChar(currency, NLScurrencyData, neededBufferSize);
     if(strlen(currency) == 0)
     {
-        uprv_free(NLScurrencyData);
         *status = U_INTERNAL_PROGRAM_ERROR;
         currency = "";
         return -1;
@@ -442,7 +446,6 @@ int32_t getCurrencyCode_impl(char* currency, UErrorCode* status)
     // Since we retreived the currency code in caps, we need to make it lowercase for it to be in CLDR BCP47 U extensions format.
     T_CString_toLowerCase(currency);
 
-    uprv_free(NLScurrencyData);
     return 0;
 }
 
@@ -467,27 +470,24 @@ CharString getHourCycle_impl(UErrorCode* status)
     {
         return CharString();
     }
-    wchar_t *NLShourCycle = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
-    if(NLShourCycle == NULL)
+    WCharString NLShourCycle(neededBufferSize);
+    if(NLShourCycle.data() == NULL)
     {
         *status = U_MEMORY_ALLOCATION_ERROR;
     }
-    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, NLShourCycle, neededBufferSize, status);
+    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, NLShourCycle.data(), neededBufferSize, status);
 
     if(U_FAILURE(*status) || result == -1)
     {
-        uprv_free(NLShourCycle);
         return CharString();
     }   
 
-    CharString hourCycle = get12_or_24hourFormat(NLShourCycle, status);
+    CharString hourCycle = get12_or_24hourFormat(NLShourCycle.data(), status);
     if(strlen(hourCycle.data()) == 0)
     {
-        uprv_free(NLShourCycle);
         *status = U_INTERNAL_PROGRAM_ERROR;
         return CharString();
     }
-    uprv_free(NLShourCycle);
     return hourCycle;
 }
 
