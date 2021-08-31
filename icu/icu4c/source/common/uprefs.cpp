@@ -8,6 +8,11 @@ U_NAMESPACE_USE
 
 constexpr int32_t UPREFS_API_FAILURE = -1;
 
+#ifndef CAL_PERSIAN
+#define CAL_PERSIAN                    22     // Persian (Solar Hijri) calendar
+#endif
+
+
 #define ALLOCATEMEMORY(var, type) (type)uprv_malloc(var * sizeof(type));
 
 #define RETURN_FAILURE_STRING_WITH_STATUS_IF(value, error, status)      \
@@ -53,7 +58,8 @@ constexpr int32_t UPREFS_API_FAILURE = -1;
 // NLS CALID reference:https://docs.microsoft.com/en-us/windows/win32/intl/calendar-identifiers
 CharString getCalendarBCP47FromNLSType(int32_t calendar, UErrorCode* status)
 {
-    switch(calendar){
+    switch(calendar)
+    {
         case CAL_GREGORIAN:
         case CAL_GREGORIAN_US:
         case CAL_GREGORIAN_ME_FRENCH:
@@ -152,7 +158,8 @@ CharString getSortingSystemBCP47FromNLSType(wchar_t* sortingSystem, UErrorCode* 
 // These could be used in a BCP47 tag like this: "en-US-u-fw-sun".
 CharString getFirstDayBCP47FromNLSType(int32_t firstday, UErrorCode* status) 
 {
-    switch(firstday){
+    switch(firstday)
+    {
         case 0:
             return CharString("mon", *status);
 
@@ -194,7 +201,8 @@ CharString getFirstDayBCP47FromNLSType(int32_t firstday, UErrorCode* status)
 // These could be used in a BCP47 tag like this: "en-US-u-ms-metric".
 CharString getMeasureSystemBCP47FromNLSType(int32_t measureSystem, UErrorCode *status) 
 {
-    switch(measureSystem){
+    switch(measureSystem)
+    {
         case 0:
             return CharString("metric", *status);
         case 1:
@@ -238,6 +246,7 @@ CharString get12_or_24hourFormat(wchar_t* hourFormat, UErrorCode* status)
         {
             isInEscapedString = !isInEscapedString;
         }
+
         if (!isInEscapedString) 
         {
             // Check for both so we can escape early
@@ -245,6 +254,7 @@ CharString get12_or_24hourFormat(wchar_t* hourFormat, UErrorCode* status)
             {
                 return CharString("h23", *status);
             }
+
             if (hourFormat[i] == L'h')
             {
                 return CharString("h12", *status);
@@ -258,19 +268,18 @@ CharString get12_or_24hourFormat(wchar_t* hourFormat, UErrorCode* status)
 UErrorCode getUErrorCodeFromLastError()
 {
     DWORD error = GetLastError();
-    if (error == ERROR_INSUFFICIENT_BUFFER)
+    switch(error)
     {
-        return U_BUFFER_OVERFLOW_ERROR;
+        case ERROR_INSUFFICIENT_BUFFER:
+            return U_BUFFER_OVERFLOW_ERROR;
+
+        case ERROR_INVALID_FLAGS:
+        case ERROR_INVALID_PARAMETER:
+            return U_ILLEGAL_ARGUMENT_ERROR;
+
+        default:    
+            return U_INTERNAL_PROGRAM_ERROR;
     }
-    else if (error == ERROR_INVALID_FLAGS)
-    {
-        return U_ILLEGAL_ARGUMENT_ERROR;
-    }
-    else if (error == ERROR_INVALID_PARAMETER)
-    {
-        return U_ILLEGAL_ARGUMENT_ERROR;
-    }
-    return U_INTERNAL_PROGRAM_ERROR;
 }
 
 int32_t GetLocaleInfoExWrapper(LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCData, int cchData, UErrorCode* errorCode)
@@ -286,20 +295,6 @@ int32_t GetLocaleInfoExWrapper(LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCD
     return result;
 }
 
-// This obtains data from NLS for the given LCTYPE for cases such as locale name, sorting method or currency.
-// This function can be used with a null buffer to find out the needed buffer size.
-int32_t GetLocaleInfoAsString(wchar_t* dataBuffer, int32_t bufferSize, PCWSTR localeName, LCTYPE type, UErrorCode* status)
-{
-    int32_t neededBufferSize = GetLocaleInfoExWrapper(localeName, type, nullptr, 0, status);
-    RETURN_VALUE_IF(neededBufferSize < 0, -1);
-    RETURN_VALUE_IF(dataBuffer == nullptr || bufferSize == 0, neededBufferSize);
-
-    int32_t result = GetLocaleInfoExWrapper(localeName, type, dataBuffer, bufferSize, status);
-    RETURN_VALUE_IF(result < 0, -1);
-
-    return neededBufferSize;
-}
-
 // Get data from GetLocaleInfoEx as an int for cases such as Calendar, First day of the week, and Measurement system
 // This only works for LCTYPEs that start with LOCALE_I, such as LOCALE_IFIRSTDAYOFWEEK or LOCALE_ICALENDARTYPE,
 // it will not work for LCTYPEs that start with LOCALE_S, such as LOCALE_SNAME or LOCALE_SINTLSYMBOL
@@ -307,7 +302,8 @@ int32_t GetLocaleInfoAsString(wchar_t* dataBuffer, int32_t bufferSize, PCWSTR lo
 int32_t GetLocaleInfoAsInt(PCWSTR localeName, LCTYPE type, UErrorCode* status)
 {
     int32_t result = 0;
-    GetLocaleInfoExWrapper(localeName, 
+    GetLocaleInfoExWrapper(
+                           localeName, 
                            type | LOCALE_RETURN_NUMBER, 
                            reinterpret_cast<PWSTR>(&result), 
                            sizeof(result) / sizeof(wchar_t), 
@@ -335,7 +331,8 @@ int32_t checkBufferCapacityAndCopy(const char* uprefsString, char* uprefsBuffer,
 CharString getLocaleBCP47Tag_impl(UErrorCode* status)
 {
     // First part of a bcp47 tag looks like an NLS user locale, so we get the NLS user locale.
-    int32_t neededBufferSize = GetLocaleInfoAsString(nullptr, 0, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
+    int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, nullptr, 0, status);
+
     if(U_FAILURE(*status) || neededBufferSize == -1)
     {
         return CharString();
@@ -344,7 +341,7 @@ CharString getLocaleBCP47Tag_impl(UErrorCode* status)
     wchar_t *NLSLocale = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
     RETURN_FAILURE_STRING_WITH_STATUS_IF(NLSLocale == NULL, U_MEMORY_ALLOCATION_ERROR, status);
     
-    int32_t result = GetLocaleInfoAsString(NLSLocale, neededBufferSize, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
+    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSLocale, neededBufferSize, status);
 
     if(U_FAILURE(*status) || result == -1)
     {
@@ -380,7 +377,8 @@ CharString getCalendarSystem_impl(UErrorCode* status)
 CharString getSortingSystem_impl(UErrorCode* status)
 {
     // In order to get the sorting system, we need to get LOCALE_SNAME, which appends the sorting system (if any) to the locale
-    int32_t neededBufferSize = GetLocaleInfoAsString(nullptr, 0, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
+    int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, nullptr, 0, status);
+    
     if(U_FAILURE(*status) || neededBufferSize == -1)
     {
         return CharString();
@@ -392,7 +390,7 @@ CharString getSortingSystem_impl(UErrorCode* status)
         *status = U_MEMORY_ALLOCATION_ERROR;
         return CharString();
     }
-    int32_t result = GetLocaleInfoAsString(NLSsortingSystem, neededBufferSize, LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, status);
+    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSsortingSystem, neededBufferSize, status);
 
     if(U_FAILURE(*status) || result == -1)
     {
@@ -426,7 +424,8 @@ CharString getSortingSystem_impl(UErrorCode* status)
 
 int32_t getCurrencyCode_impl(char* currency, UErrorCode* status)
 {
-    int32_t neededBufferSize = GetLocaleInfoAsString(nullptr, 0, LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, status);
+    int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, nullptr, 0, status);
+    
     if(U_FAILURE(*status) || neededBufferSize == -1)
     {
         currency = "";
@@ -435,7 +434,8 @@ int32_t getCurrencyCode_impl(char* currency, UErrorCode* status)
     
     wchar_t *NLScurrencyData = ALLOCATEMEMORY(neededBufferSize, wchar_t*);
     RETURN_FAILURE_WITH_STATUS_IF(NLScurrencyData == NULL, U_MEMORY_ALLOCATION_ERROR);
-    int32_t result = GetLocaleInfoAsString(NLScurrencyData, neededBufferSize, LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, status);
+    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, NLScurrencyData, neededBufferSize, status);
+
     if(U_FAILURE(*status) || result == -1)
     {
         uprv_free(NLScurrencyData);
@@ -472,7 +472,8 @@ CharString getFirstDayOfWeek_impl(UErrorCode* status)
 
 CharString getHourCycle_impl(UErrorCode* status)
 {
-    int32_t neededBufferSize = GetLocaleInfoAsString(nullptr, 0, LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, status);
+    int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, nullptr, 0, status);
+
     if(U_FAILURE(*status) || neededBufferSize == -1)
     {
         return CharString();
@@ -482,7 +483,8 @@ CharString getHourCycle_impl(UErrorCode* status)
     {
         *status = U_MEMORY_ALLOCATION_ERROR;
     }
-    int32_t result = GetLocaleInfoAsString(NLShourCycle, neededBufferSize, LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, status);
+    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, NLShourCycle, neededBufferSize, status);
+
     if(U_FAILURE(*status) || result == -1)
     {
         uprv_free(NLShourCycle);
