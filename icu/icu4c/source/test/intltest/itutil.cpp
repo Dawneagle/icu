@@ -64,7 +64,6 @@ void IntlTestUtilities::runIndexedTest( int32_t index, UBool exec, const char* &
     TESTCASE_AUTO_CLASS(PUtilTest);
     TESTCASE_AUTO_CLASS(UVector32Test);
     TESTCASE_AUTO_CLASS(UVectorTest);
-    TESTCASE_AUTO_CLASS(UPrefsTest);
     TESTCASE_AUTO_CLASS(UTextTest);
     TESTCASE_AUTO_CLASS(LocaleAliasTest);
     TESTCASE_AUTO_CLASS(UnicodeSetTest);
@@ -77,6 +76,9 @@ void IntlTestUtilities::runIndexedTest( int32_t index, UBool exec, const char* &
     TESTCASE_AUTO_CREATE_CLASS(UnifiedCacheTest);
     TESTCASE_AUTO_CREATE_CLASS(QuantityFormatterTest);
     TESTCASE_AUTO_CREATE_CLASS(PluralMapTest);
+#if U_PLATFORM_USES_ONLY_WIN32_API
+    TESTCASE_AUTO_CLASS(UPrefsTest);
+#endif
 #if !UCONFIG_NO_FORMATTING
     TESTCASE_AUTO_CREATE_CLASS(StaticUnicodeSetsTest);
 #endif

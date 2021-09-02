@@ -1,5 +1,6 @@
-#include "windows.h"
 #include "uprefstest.h"
+#if U_PLATFORM_USES_ONLY_WIN32_API
+
 
 #define ARRAY_SIZE 512
 
@@ -18,7 +19,6 @@ UPrefsTest::~UPrefsTest()
 {
 }
 
-
 void UPrefsTest::runIndexedTest( int32_t index, UBool exec, const char* &name, char* par )
 {
     if (exec) logln("TestSuite UPrefsTest: ");
@@ -36,9 +36,6 @@ void UPrefsTest::runIndexedTest( int32_t index, UBool exec, const char* &name, c
     TESTCASE_AUTO(Get12HourCycleMixed2);
     TESTCASE_AUTO(Get12HourCycle);
     TESTCASE_AUTO(Get12HourCycle2);
-
-
-    
     TESTCASE_AUTO_END;
 }
 
@@ -340,7 +337,8 @@ void UPrefsTest::TestGetUnsupportedSorting()
     }
 }
 
-void UPrefsTest::Get24HourCycleMixed() {
+void UPrefsTest::Get24HourCycleMixed() 
+{
     bool correct = false;
     char languageBuffer[ARRAY_SIZE] = {0};
     language = L"ja-JP";
@@ -360,7 +358,8 @@ void UPrefsTest::Get24HourCycleMixed() {
     }
 }
 
-void UPrefsTest::Get12HourCycleMixed() {
+void UPrefsTest::Get12HourCycleMixed()
+{
     bool correct = false;
     char languageBuffer[ARRAY_SIZE] = {0};
     language = L"ja-JP";
@@ -381,7 +380,8 @@ void UPrefsTest::Get12HourCycleMixed() {
 }
 
 
-void UPrefsTest::Get12HourCycleMixed2() {
+void UPrefsTest::Get12HourCycleMixed2()
+{
     bool correct = false;
     char languageBuffer[ARRAY_SIZE] = {0};
     language = L"ja-JP";
@@ -401,7 +401,8 @@ void UPrefsTest::Get12HourCycleMixed2() {
     }
 }
 
-void UPrefsTest::Get12HourCycle() {
+void UPrefsTest::Get12HourCycle()
+{
     bool correct = false;
     char languageBuffer[ARRAY_SIZE] = {0};
     language = L"ja-JP";
@@ -421,7 +422,8 @@ void UPrefsTest::Get12HourCycle() {
     }
 }
 
-void UPrefsTest::Get12HourCycle2() {
+void UPrefsTest::Get12HourCycle2()
+{
     bool correct = false;
     char languageBuffer[ARRAY_SIZE] = {0};
     language = L"ja-JP";
@@ -440,3 +442,4 @@ void UPrefsTest::Get12HourCycle2() {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
 }
+#endif //U_PLATFORM_USES_ONLY_WIN32_API

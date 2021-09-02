@@ -1,8 +1,11 @@
+#include "unicode/platform.h"
+#if U_PLATFORM_USES_ONLY_WIN32_API
 #define UPREFS_TEST 1
 
 #ifndef UPREFSTEST_H
 #define UPREFSTEST_H
 
+#include "windows.h"
 #include "intltest.h"
 #include "uprefs.h"
 
@@ -37,4 +40,5 @@ public:
     void Get12HourCycle2();   
 };
 
-#endif
+#endif //UPREFSTEST_H
+#endif //U_PLATFORM_USES_ONLY_WIN32_API
