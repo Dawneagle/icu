@@ -300,6 +300,7 @@ UErrorCode getUErrorCodeFromLastError()
 
 int32_t GetLocaleInfoExWrapper(LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCData, int cchData, UErrorCode* errorCode)
 {
+#ifndef UPREFS_TEST
     int32_t result = GetLocaleInfoEx(lpLocaleName, LCType, lpLCData, cchData);
 
     if (result == 0)
@@ -309,6 +310,11 @@ int32_t GetLocaleInfoExWrapper(LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCD
     }
     *errorCode = U_ZERO_ERROR;
     return result;
+#else
+    #include "uprefstest.h"
+    UPrefsTest prefTests;
+    return prefTests.MockGetLocaleInfoEx(lpLocaleName, LCType, lpLCData, cchData, errorCode);
+#endif
 }
 
 // Copies a string to a buffer if its size allows it and returns the size.
@@ -350,7 +356,7 @@ CharString getLocaleBCP47Tag_impl(UErrorCode* status)
     wchar_t * position = wcsstr(NLSLocale.data(), L"_");
     if (position != nullptr)
     {
-        position = L"\0";
+        wcsncpy (position, L"\0", 1);
     }
     CharString languageTag;
     wcstombs(languageTag.data(), NLSLocale.data(), neededBufferSize);
@@ -402,7 +408,7 @@ CharString getSortingSystem_impl(UErrorCode* status)
     // Note: not finding a "_" is not an error, it means the user has not selected an alternate sorting method, which is fine.
     if (startPosition != nullptr) 
     {
-        NLSsortingSystem.CopyString(startPosition + 1, wcslen(startPosition + 1));
+        NLSsortingSystem.CopyString(startPosition + 1, wcslen(startPosition));
         CharString sortingSystem = getSortingSystemBCP47FromNLSType(NLSsortingSystem.data(), status);
 
         if(strlen(sortingSystem.data()) == 0)
