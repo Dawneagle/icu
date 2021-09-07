@@ -1,9 +1,10 @@
+#ifndef UPREFSTEST_H
+#define UPREFSTEST_H
+
 #include "unicode/platform.h"
 #if U_PLATFORM_USES_ONLY_WIN32_API
 #define UPREFS_TEST 1
 
-#ifndef UPREFSTEST_H
-#define UPREFSTEST_H
 
 #include "windows.h"
 #include "intltest.h"
@@ -11,12 +12,12 @@
 
 class UPrefsTest: public IntlTest {
 public:
-    static std::wstring language;
-    static std::wstring currency;
-    static std::wstring hourCycle;
-    static int32_t firstday;
-    static int32_t measureSystem;
-    static CALID calendar;
+    std::wstring UPrefsTest::language = L"";
+    std::wstring UPrefsTest::currency = L"";
+    std::wstring UPrefsTest::hourCycle = L"";
+    int32_t UPrefsTest::firstday = 0;
+    int32_t UPrefsTest::measureSystem = 0;
+    CALID UPrefsTest::calendar = 0;
     UPrefsTest();
     virtual ~UPrefsTest();
 

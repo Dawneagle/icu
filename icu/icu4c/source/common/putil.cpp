@@ -1782,7 +1782,7 @@ The leftmost codepage (.xxx) wins.
     char *correctedPOSIXLocale = nullptr;
 
     int32_t neededBufferSize = uprefs_getBCP47Tag(nullptr, 0, &status);
-    static char windowsLocale[LOCALE_NAME_MAX_LENGTH] = {};
+    char* windowsLocale = static_cast<char *>(uprv_malloc(neededBufferSize));
     int32_t length = uprefs_getBCP47Tag(windowsLocale, neededBufferSize, &status);
 
     // Now we should have a Windows locale name that needs converted to the POSIX style.
@@ -1790,7 +1790,7 @@ The leftmost codepage (.xxx) wins.
     {
 
         // Now normalize the resulting name
-        correctedPOSIXLocale = static_cast<char *>(uprv_malloc(POSIX_LOCALE_CAPACITY + 1));
+        correctedPOSIXLocale = static_cast<char *>(uprv_malloc(length * 2));
         /* TODO: Should we just exit on memory allocation failure? */
         if (correctedPOSIXLocale)
         {
@@ -1813,6 +1813,7 @@ The leftmost codepage (.xxx) wins.
     if (gCorrectedPOSIXLocale == nullptr) {
         gCorrectedPOSIXLocale = "en_US";
     }
+    uprv_free(windowsLocale);
     return gCorrectedPOSIXLocale;
 
 #elif U_PLATFORM == U_PF_OS400

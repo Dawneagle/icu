@@ -1,13 +1,12 @@
+// © 2016 and later: Unicode, Inc. and others.
+// License & terms of use: http://www.unicode.org/copyright.html
+
+#ifndef UPREFS_H
+#define UPREFS_H
+
 #include "unicode/platform.h"
 #if U_PLATFORM_USES_ONLY_WIN32_API
-#include <windows.h>
 #include "unicode/utypes.h"
-#include "unicode/ustring.h"
-#include "cmemory.h"
-#include "charstr.h"
-#include "cstring.h"
-
-#define UPREFS_API U_CFUNC U_EXPORT
 
 /**
 * Gets the valid and canonical BCP47 tag with the user settings for Language, Calendar, Sorting, Currency,
@@ -25,4 +24,5 @@
 *         if status was not U_ZERO_ERROR.
 */
 int32_t uprefs_getBCP47Tag(char* uprefsBuffer, int32_t bufferSize, UErrorCode* status);
+#endif
 #endif

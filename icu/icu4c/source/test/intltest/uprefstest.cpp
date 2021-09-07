@@ -4,13 +4,6 @@
 
 #define ARRAY_SIZE 512
 
-    std::wstring UPrefsTest::language = L"";
-    std::wstring UPrefsTest::currency = L"";
-    std::wstring UPrefsTest::hourCycle = L"";
-    int32_t UPrefsTest::firstday = 0;
-    int32_t UPrefsTest::measureSystem = 0;
-    CALID UPrefsTest::calendar = 0;
-
 UPrefsTest::UPrefsTest() 
 {
 }
@@ -19,7 +12,7 @@ UPrefsTest::~UPrefsTest()
 {
 }
 
-void UPrefsTest::runIndexedTest( int32_t index, UBool exec, const char* &name, char* par )
+void UPrefsTest::runIndexedTest( int32_t index, UBool exec, const char* &name, char* /*par*/ )
 {
     if (exec) logln("TestSuite UPrefsTest: ");
     TESTCASE_AUTO_BEGIN;

@@ -1,64 +1,46 @@
-
-// uprefs.cpp : Implementation of the APIs declared in uprefs.h
+// © 2016 and later: Unicode, Inc. and others.
+// License & terms of use: http://www.unicode.org/copyright.html
 
 #include "uprefs.h"
+#include <windows.h>
+#include "unicode/ustring.h"
+#include "cmemory.h"
+#include "charstr.h"
+#include "cstring.h"
+#include "cwchar.h"
 #if U_PLATFORM_USES_ONLY_WIN32_API
 
 U_NAMESPACE_USE
 
 constexpr int32_t UPREFS_API_FAILURE = -1;
 
-// We currently have some CI builds that use MSYS2 and GCC. MSYS is currently setup to use
-// the Windows 7 SDK. CAL_PERSIAN was added to the SDK after that version, so we need to 
-// define it ourselves, since not having it will produce build failures. 
+// Older versions of the Windows SDK don’t have definitions for calendar types that were added later on.
+// (For example, the Windows 7 SDK doesn’t have CAL_PERSIAN).
+// So we’ll need to provide our own definitions for some of them.
+// Note that on older versions of the OS these values won't ever be returned by the platform APIs, so providing our own definitions is fine.
 #ifndef CAL_PERSIAN
 #define CAL_PERSIAN                    22     // Persian (Solar Hijri) calendar
 #endif
 
 #define RETURN_FAILURE_STRING_WITH_STATUS_IF(value, error, status)      \
-    if(value)                                                   \
+    if (value)                                                  \
     {                                                           \
         *status = error;                                        \
         return CharString();                                    \
     }
 
 #define RETURN_FAILURE_WITH_STATUS_IF(condition, error)         \
-    if(condition)                                               \
+    if (condition)                                              \
     {                                                           \
         *status = error;                                        \
         return UPREFS_API_FAILURE;                              \
     }
 
 #define RETURN_VALUE_IF(condition, value)                       \
-    if(condition)                                               \
+    if (condition)                                              \
     {                                                           \
         return value;                                           \
     }                                                           \
-
-
-class WCharString
-{
-    private:
-        wchar_t* string = nullptr;
-    public:
-        WCharString(int neededMemory)
-        {
-            string = static_cast<wchar_t*>(uprv_malloc(neededMemory * sizeof(wchar_t)));
-        }
-        void CopyString(wchar_t* src, size_t neededMemory)
-        {
-            string = static_cast<wchar_t*>(uprv_malloc(neededMemory * sizeof(wchar_t)));
-            uprv_memcpy(string, src, neededMemory * sizeof(wchar_t));
-        }
-        ~WCharString()
-        {
-            uprv_free(string);
-        }
-        wchar_t* data()
-        {
-            return string;
-        }
-};
 
 // -------------------------------------------------------
 // ----------------- MAPPING FUNCTIONS--------------------
@@ -255,7 +237,8 @@ CharString getMeasureSystemBCP47FromNLSType(int32_t measureSystem, UErrorCode *s
 CharString get12_or_24hourFormat(wchar_t* hourFormat, UErrorCode* status)
 {
     bool isInEscapedString = false;
-    for (int i = 0; i < wcslen(hourFormat); i++)
+    const int32_t hourLength = uprv_wcslen(hourFormat);
+    for (int i = 0; i < hourLength; i++)
     {
         // Toggle escaped flag if in ' quoted portion
         if (hourFormat[i] == L'\'') 
@@ -292,7 +275,8 @@ UErrorCode getUErrorCodeFromLastError()
         case ERROR_INVALID_FLAGS:
         case ERROR_INVALID_PARAMETER:
             return U_ILLEGAL_ARGUMENT_ERROR;
-
+        case ERROR_OUTOFMEMORY:
+            return U_MEMORY_ALLOCATION_ERROR;
         default:    
             return U_INTERNAL_PROGRAM_ERROR;
     }
@@ -322,12 +306,12 @@ int32_t GetLocaleInfoExWrapper(LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCD
 // If the buffer's size is set to 0, the needed buffer size is returned before copying the string.
 int32_t checkBufferCapacityAndCopy(const char* uprefsString, char* uprefsBuffer, int32_t bufferSize, UErrorCode* status)
 {
-    size_t neededBufferSize = strlen(uprefsString) + 1;
+    size_t neededBufferSize = uprv_strlen(uprefsString) + 1;
 
     RETURN_VALUE_IF(bufferSize == 0, static_cast<int32_t>(neededBufferSize));
     RETURN_FAILURE_WITH_STATUS_IF(neededBufferSize > bufferSize, U_BUFFER_OVERFLOW_ERROR);
 
-    strcpy(uprefsBuffer, uprefsString);
+    uprv_strcpy(uprefsBuffer, uprefsString);
 
     return static_cast<int32_t>(neededBufferSize);
 }
@@ -337,29 +321,34 @@ CharString getLocaleBCP47Tag_impl(UErrorCode* status)
     // First part of a bcp47 tag looks like an NLS user locale, so we get the NLS user locale.
     int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, nullptr, 0, status);
 
-    if(U_FAILURE(*status) || neededBufferSize == -1)
+    if (U_FAILURE(*status) || neededBufferSize == -1)
     {
         return CharString();
     }
 
-    WCharString NLSLocale(neededBufferSize);
-    RETURN_FAILURE_STRING_WITH_STATUS_IF(NLSLocale.data() == NULL, U_MEMORY_ALLOCATION_ERROR, status);
+    MaybeStackArray<wchar_t, 40> NLSLocale(neededBufferSize, *status);
+    if (U_FAILURE(*status))
+    {
+        *status = U_MEMORY_ALLOCATION_ERROR;
+        return CharString();
+    }
     
-    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSLocale.data(), neededBufferSize, status);
+    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSLocale.getAlias(), neededBufferSize, status);
 
-    if(U_FAILURE(*status) || result == -1)
+    if (U_FAILURE(*status) || result == -1)
     {
         return CharString();
     }
 
     // The NLS locale may include a non-default sort, such as de-DE_phoneb. We only want the locale name before the _.
-    wchar_t * position = wcsstr(NLSLocale.data(), L"_");
+    wchar_t * position = wcsstr(NLSLocale.getAlias(), L"_");
     if (position != nullptr)
     {
         wcsncpy (position, L"\0", 1);
     }
+
     CharString languageTag;
-    wcstombs(languageTag.data(), NLSLocale.data(), neededBufferSize);
+    uprv_wcstombs(languageTag.data(), NLSLocale.getAlias(), neededBufferSize);
     return languageTag;
 }
 
@@ -372,7 +361,7 @@ CharString getCalendarSystem_impl(UErrorCode* status)
     RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
     CharString calendar(getCalendarBCP47FromNLSType(NLSCalendar, status), *status);
-    RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(calendar.data()) == 0, U_UNSUPPORTED_ERROR, status);
+    RETURN_FAILURE_STRING_WITH_STATUS_IF(uprv_strlen(calendar.data()) == 0, U_UNSUPPORTED_ERROR, status);
 
     return calendar;
 }
@@ -382,20 +371,21 @@ CharString getSortingSystem_impl(UErrorCode* status)
     // In order to get the sorting system, we need to get LOCALE_SNAME, which appends the sorting system (if any) to the locale
     int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, nullptr, 0, status);
     
-    if(U_FAILURE(*status) || neededBufferSize == -1)
+    if (U_FAILURE(*status) || neededBufferSize == -1)
     {
         return CharString();
     }
 
-    WCharString NLSsortingSystem(neededBufferSize);
-    if(NLSsortingSystem.data() == NULL)
+    MaybeStackArray<wchar_t, 40> NLSsortingSystem(neededBufferSize, *status);
+    if (U_FAILURE(*status))
     {
         *status = U_MEMORY_ALLOCATION_ERROR;
         return CharString();
     }
-    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSsortingSystem.data(), neededBufferSize, status);
 
-    if(U_FAILURE(*status) || result == -1)
+    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSsortingSystem.getAlias(), neededBufferSize, status);
+
+    if (U_FAILURE(*status) || result == -1)
     {
         return CharString();
     }   
@@ -403,15 +393,16 @@ CharString getSortingSystem_impl(UErrorCode* status)
     // We use LOCALE_SNAME to get the sorting method (if any). So we need to keep
     // only the sorting bit after the _, removing the locale name.
     // Example: from "de-DE_phoneb" we only want "phoneb"
-    wchar_t * startPosition = wcsstr(NLSsortingSystem.data(), L"_");
+    wchar_t * startPosition = wcsstr(NLSsortingSystem.getAlias(), L"_");
 
     // Note: not finding a "_" is not an error, it means the user has not selected an alternate sorting method, which is fine.
     if (startPosition != nullptr) 
     {
-        NLSsortingSystem.CopyString(startPosition + 1, wcslen(startPosition));
-        CharString sortingSystem = getSortingSystemBCP47FromNLSType(NLSsortingSystem.data(), status);
+        NLSsortingSystem.aliasInstead(startPosition + 1, uprv_wcslen(startPosition));
 
-        if(strlen(sortingSystem.data()) == 0)
+        CharString sortingSystem = getSortingSystemBCP47FromNLSType(NLSsortingSystem.getAlias(), status);
+
+        if (uprv_strlen(sortingSystem.data()) == 0)
         {
             *status = U_UNSUPPORTED_ERROR;
             return CharString();
@@ -425,24 +416,29 @@ int32_t getCurrencyCode_impl(char* currency, UErrorCode* status)
 {
     int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, nullptr, 0, status);
     
-    if(U_FAILURE(*status) || neededBufferSize == -1)
+    if (U_FAILURE(*status) || neededBufferSize == -1)
     {
         currency = "";
         return -1;
     }
     
-    WCharString NLScurrencyData(neededBufferSize);
-    RETURN_FAILURE_WITH_STATUS_IF(NLScurrencyData.data() == NULL, U_MEMORY_ALLOCATION_ERROR);
-    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, NLScurrencyData.data(), neededBufferSize, status);
+    MaybeStackArray<wchar_t, 40> NLScurrencyData(neededBufferSize, *status);
+    if (U_FAILURE(*status))
+    {
+        *status = U_MEMORY_ALLOCATION_ERROR;
+        return -1;
+    }
 
-    if(U_FAILURE(*status) || result == -1)
+    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, NLScurrencyData.getAlias(), neededBufferSize, status);
+
+    if (U_FAILURE(*status) || result == -1)
     {
         currency = "";
         return -1;
     }   
-    wcstombs(currency, NLScurrencyData.data(), neededBufferSize);
+    wcstombs(currency, NLScurrencyData.getAlias(), neededBufferSize);
 
-    if(strlen(currency) == 0)
+    if (uprv_strlen(currency) == 0)
     {
         *status = U_INTERNAL_PROGRAM_ERROR;
         currency = "";
@@ -463,7 +459,7 @@ CharString getFirstDayOfWeek_impl(UErrorCode* status)
     RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
     CharString firstDay = getFirstDayBCP47FromNLSType(NLSfirstDay, status);
-    RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(firstDay.data()) == 0, U_UNSUPPORTED_ERROR, status);
+    RETURN_FAILURE_STRING_WITH_STATUS_IF(uprv_strlen(firstDay.data()) == 0, U_UNSUPPORTED_ERROR, status);
 
     return firstDay;
 }
@@ -472,24 +468,26 @@ CharString getHourCycle_impl(UErrorCode* status)
 {
     int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, nullptr, 0, status);
 
-    if(U_FAILURE(*status) || neededBufferSize == -1)
+    if (U_FAILURE(*status) || neededBufferSize == -1)
     {
         return CharString();
     }
-    WCharString NLShourCycle(neededBufferSize);
-    if(NLShourCycle.data() == NULL)
+    MaybeStackArray<wchar_t, 40> NLShourCycle(neededBufferSize, *status);
+    if (U_FAILURE(*status))
     {
         *status = U_MEMORY_ALLOCATION_ERROR;
+        return CharString();
     }
-    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, NLShourCycle.data(), neededBufferSize, status);
 
-    if(U_FAILURE(*status) || result == -1)
+    int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, NLShourCycle.getAlias(), neededBufferSize, status);
+
+    if (U_FAILURE(*status) || result == -1)
     {
         return CharString();
     }   
 
-    CharString hourCycle = get12_or_24hourFormat(NLShourCycle.data(), status);
-    if(strlen(hourCycle.data()) == 0)
+    CharString hourCycle = get12_or_24hourFormat(NLShourCycle.getAlias(), status);
+    if (uprv_strlen(hourCycle.data()) == 0)
     {
         *status = U_INTERNAL_PROGRAM_ERROR;
         return CharString();
@@ -505,19 +503,19 @@ CharString getMeasureSystem_impl(UErrorCode* status)
     RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
     CharString measureSystem = getMeasureSystemBCP47FromNLSType(NLSmeasureSystem, status);
-    RETURN_FAILURE_STRING_WITH_STATUS_IF(strlen(measureSystem.data()) == 0, U_UNSUPPORTED_ERROR, status);
+    RETURN_FAILURE_STRING_WITH_STATUS_IF(uprv_strlen(measureSystem.data()) == 0, U_UNSUPPORTED_ERROR, status);
 
     return measureSystem;
 }
 
 void appendIfDataNotEmpty(CharString& dest, const char* firstData, const char* secondData, bool& warningGenerated, UErrorCode* status)
 {
-    if(*status == U_UNSUPPORTED_ERROR)
+    if (*status == U_UNSUPPORTED_ERROR)
     {
         warningGenerated = true;
     }
 
-    if(strlen(secondData) != 0)
+    if (uprv_strlen(secondData) != 0)
     {
         dest.append(firstData, *status);
         dest.append(secondData, *status);
@@ -573,7 +571,7 @@ int32_t uprefs_getBCP47Tag(char* uprefsBuffer, int32_t bufferSize, UErrorCode* s
     RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
     appendIfDataNotEmpty(BCP47Tag, "-ms-", measureSystem.data(), warningGenerated, status);
 
-    if(warningGenerated)
+    if (warningGenerated)
     {
         *status = U_USING_FALLBACK_WARNING;
     }
