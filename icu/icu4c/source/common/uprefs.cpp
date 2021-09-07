@@ -31,7 +31,7 @@ U_NAMESPACE_USE
     if (condition)                                              \
     {                                                           \
         *status = error;                                        \
-        return -1;                              \
+        return 0;                              \
     }
 
 #define RETURN_VALUE_IF(condition, value)                       \
@@ -288,7 +288,7 @@ int32_t GetLocaleInfoExWrapper(LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCD
     if (result == 0)
     {
         *errorCode = getUErrorCodeFromLastError();
-        return -1;
+        return 0;
     }
     *errorCode = U_ZERO_ERROR;
     return result;
@@ -319,7 +319,7 @@ CharString getLocaleBCP47Tag_impl(UErrorCode* status)
     // First part of a bcp47 tag looks like an NLS user locale, so we get the NLS user locale.
     int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, nullptr, 0, status);
 
-    if (U_FAILURE(*status) || neededBufferSize == -1)
+    if (U_FAILURE(*status))
     {
         return CharString();
     }
@@ -333,7 +333,7 @@ CharString getLocaleBCP47Tag_impl(UErrorCode* status)
     
     int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSLocale.getAlias(), neededBufferSize, status);
 
-    if (U_FAILURE(*status) || result == -1)
+    if (U_FAILURE(*status))
     {
         return CharString();
     }
@@ -369,7 +369,7 @@ CharString getSortingSystem_impl(UErrorCode* status)
     // In order to get the sorting system, we need to get LOCALE_SNAME, which appends the sorting system (if any) to the locale
     int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, nullptr, 0, status);
     
-    if (U_FAILURE(*status) || neededBufferSize == -1)
+    if (U_FAILURE(*status))
     {
         return CharString();
     }
@@ -383,7 +383,7 @@ CharString getSortingSystem_impl(UErrorCode* status)
 
     int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSsortingSystem.getAlias(), neededBufferSize, status);
 
-    if (U_FAILURE(*status) || result == -1)
+    if (U_FAILURE(*status))
     {
         return CharString();
     }   
@@ -410,43 +410,41 @@ CharString getSortingSystem_impl(UErrorCode* status)
     return CharString();
 }
 
-int32_t getCurrencyCode_impl(char* currency, UErrorCode* status)
+CharString getCurrencyCode_impl(UErrorCode* status)
 {
     int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, nullptr, 0, status);
     
-    if (U_FAILURE(*status) || neededBufferSize == -1)
+    if (U_FAILURE(*status))
     {
-        currency = "";
-        return -1;
+        return CharString();
     }
     
     MaybeStackArray<wchar_t, 40> NLScurrencyData(neededBufferSize, *status);
     if (U_FAILURE(*status))
     {
         *status = U_MEMORY_ALLOCATION_ERROR;
-        return -1;
+        return CharString();
     }
 
     int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, NLScurrencyData.getAlias(), neededBufferSize, status);
 
-    if (U_FAILURE(*status) || result == -1)
+    if (U_FAILURE(*status))
     {
-        currency = "";
-        return -1;
-    }   
-    wcstombs(currency, NLScurrencyData.getAlias(), neededBufferSize);
+        return CharString();
+    }
+    CharString currency;   
+    wcstombs(currency.data(), NLScurrencyData.getAlias(), neededBufferSize);
 
-    if (uprv_strlen(currency) == 0)
+    if (uprv_strlen(currency.data()) == 0)
     {
         *status = U_INTERNAL_PROGRAM_ERROR;
-        currency = "";
-        return -1;
+        return CharString();
     }
 
     // Since we retreived the currency code in caps, we need to make it lowercase for it to be in CLDR BCP47 U extensions format.
-    T_CString_toLowerCase(currency);
+    T_CString_toLowerCase(currency.data());
 
-    return 0;
+    return currency;
 }
 
 CharString getFirstDayOfWeek_impl(UErrorCode* status)
@@ -466,7 +464,7 @@ CharString getHourCycle_impl(UErrorCode* status)
 {
     int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, nullptr, 0, status);
 
-    if (U_FAILURE(*status) || neededBufferSize == -1)
+    if (U_FAILURE(*status))
     {
         return CharString();
     }
@@ -479,7 +477,7 @@ CharString getHourCycle_impl(UErrorCode* status)
 
     int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, NLShourCycle.getAlias(), neededBufferSize, status);
 
-    if (U_FAILURE(*status) || result == -1)
+    if (U_FAILURE(*status))
     {
         return CharString();
     }   
@@ -540,33 +538,32 @@ int32_t uprefs_getBCP47Tag(char* uprefsBuffer, int32_t bufferSize, UErrorCode* s
     bool warningGenerated = false;
 
     CharString languageTag = getLocaleBCP47Tag_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status), -1);
+    RETURN_VALUE_IF(U_FAILURE(*status), 0);
     BCP47Tag.append(languageTag.data(), *status);
     BCP47Tag.append("-u", *status);
 
     CharString calendar = getCalendarSystem_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, -1);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, 0);
     appendIfDataNotEmpty(BCP47Tag, "-ca-", calendar.data(), warningGenerated, status);
     
     CharString sortingSystem = getSortingSystem_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, -1);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, 0);
     appendIfDataNotEmpty(BCP47Tag, "-co-", sortingSystem.data(), warningGenerated, status);
 
-    CharString currency;
-    size_t currencyResult = getCurrencyCode_impl(currency.data(), status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR || currencyResult == -1, -1);
+    CharString currency = getCurrencyCode_impl(status);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, 0);
     appendIfDataNotEmpty(BCP47Tag, "-cu-", currency.data(), warningGenerated, status);
 
     CharString firstDay = getFirstDayOfWeek_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, -1);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, 0);
     appendIfDataNotEmpty(BCP47Tag, "-fw-", firstDay.data(), warningGenerated, status);
 
     CharString hourCycle = getHourCycle_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, -1);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, 0);
     appendIfDataNotEmpty(BCP47Tag, "-hc-", hourCycle.data(), warningGenerated, status);
 
     CharString measureSystem = getMeasureSystem_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, -1);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, 0);
     appendIfDataNotEmpty(BCP47Tag, "-ms-", measureSystem.data(), warningGenerated, status);
 
     if (warningGenerated)

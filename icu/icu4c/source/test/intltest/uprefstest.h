@@ -12,12 +12,12 @@
 
 class UPrefsTest: public IntlTest {
 public:
-    std::wstring UPrefsTest::language = L"";
-    std::wstring UPrefsTest::currency = L"";
-    std::wstring UPrefsTest::hourCycle = L"";
-    int32_t UPrefsTest::firstday = 0;
-    int32_t UPrefsTest::measureSystem = 0;
-    CALID UPrefsTest::calendar = 0;
+    static std::wstring language;
+    static std::wstring currency;
+    static std::wstring hourCycle;
+    static int32_t firstday;
+    static int32_t measureSystem;
+    static CALID calendar;
     UPrefsTest();
     virtual ~UPrefsTest();
 
@@ -31,9 +31,6 @@ public:
     void TestUseNeededBuffer();
     void TestGetNeededBuffer();
     void TestGetUnsupportedSorting();
-    void Get24HourCycleMixed1();
-    void Get24HourCycleMixed2();
-    void Get24HourCycleMixed3();
     void Get24HourCycleMixed();
     void Get12HourCycleMixed();
     void Get12HourCycleMixed2();

@@ -4,6 +4,13 @@
 
 #define ARRAY_SIZE 512
 
+    std::wstring UPrefsTest::language = L"";
+    std::wstring UPrefsTest::currency = L"";
+    std::wstring UPrefsTest::hourCycle = L"";
+    int32_t UPrefsTest::firstday = 0;
+    int32_t UPrefsTest::measureSystem = 0;
+    CALID UPrefsTest::calendar = 0;
+
 UPrefsTest::UPrefsTest() 
 {
 }
