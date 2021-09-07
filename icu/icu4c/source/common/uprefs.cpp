@@ -2,17 +2,15 @@
 // License & terms of use: http://www.unicode.org/copyright.html
 
 #include "uprefs.h"
-#include <windows.h>
 #include "unicode/ustring.h"
 #include "cmemory.h"
 #include "charstr.h"
 #include "cstring.h"
 #include "cwchar.h"
 #if U_PLATFORM_USES_ONLY_WIN32_API
+#include <windows.h>
 
 U_NAMESPACE_USE
-
-constexpr int32_t UPREFS_API_FAILURE = -1;
 
 // Older versions of the Windows SDK don’t have definitions for calendar types that were added later on.
 // (For example, the Windows 7 SDK doesn’t have CAL_PERSIAN).
@@ -33,7 +31,7 @@ constexpr int32_t UPREFS_API_FAILURE = -1;
     if (condition)                                              \
     {                                                           \
         *status = error;                                        \
-        return UPREFS_API_FAILURE;                              \
+        return -1;                              \
     }
 
 #define RETURN_VALUE_IF(condition, value)                       \
@@ -237,7 +235,7 @@ CharString getMeasureSystemBCP47FromNLSType(int32_t measureSystem, UErrorCode *s
 CharString get12_or_24hourFormat(wchar_t* hourFormat, UErrorCode* status)
 {
     bool isInEscapedString = false;
-    const int32_t hourLength = uprv_wcslen(hourFormat);
+    const int32_t hourLength = static_cast<int32_t>(uprv_wcslen(hourFormat));
     for (int i = 0; i < hourLength; i++)
     {
         // Toggle escaped flag if in ' quoted portion
@@ -290,7 +288,7 @@ int32_t GetLocaleInfoExWrapper(LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCD
     if (result == 0)
     {
         *errorCode = getUErrorCodeFromLastError();
-        return UPREFS_API_FAILURE;
+        return -1;
     }
     *errorCode = U_ZERO_ERROR;
     return result;
@@ -398,7 +396,7 @@ CharString getSortingSystem_impl(UErrorCode* status)
     // Note: not finding a "_" is not an error, it means the user has not selected an alternate sorting method, which is fine.
     if (startPosition != nullptr) 
     {
-        NLSsortingSystem.aliasInstead(startPosition + 1, uprv_wcslen(startPosition));
+        NLSsortingSystem.aliasInstead(startPosition + 1, static_cast<int32_t>(uprv_wcslen(startPosition)));
 
         CharString sortingSystem = getSortingSystemBCP47FromNLSType(NLSsortingSystem.getAlias(), status);
 
@@ -542,33 +540,33 @@ int32_t uprefs_getBCP47Tag(char* uprefsBuffer, int32_t bufferSize, UErrorCode* s
     bool warningGenerated = false;
 
     CharString languageTag = getLocaleBCP47Tag_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status), UPREFS_API_FAILURE);
+    RETURN_VALUE_IF(U_FAILURE(*status), -1);
     BCP47Tag.append(languageTag.data(), *status);
     BCP47Tag.append("-u", *status);
 
     CharString calendar = getCalendarSystem_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, -1);
     appendIfDataNotEmpty(BCP47Tag, "-ca-", calendar.data(), warningGenerated, status);
     
     CharString sortingSystem = getSortingSystem_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, -1);
     appendIfDataNotEmpty(BCP47Tag, "-co-", sortingSystem.data(), warningGenerated, status);
 
     CharString currency;
     size_t currencyResult = getCurrencyCode_impl(currency.data(), status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR || currencyResult == -1, UPREFS_API_FAILURE);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR || currencyResult == -1, -1);
     appendIfDataNotEmpty(BCP47Tag, "-cu-", currency.data(), warningGenerated, status);
 
     CharString firstDay = getFirstDayOfWeek_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, -1);
     appendIfDataNotEmpty(BCP47Tag, "-fw-", firstDay.data(), warningGenerated, status);
 
     CharString hourCycle = getHourCycle_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, -1);
     appendIfDataNotEmpty(BCP47Tag, "-hc-", hourCycle.data(), warningGenerated, status);
 
     CharString measureSystem = getMeasureSystem_impl(status);
-    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, UPREFS_API_FAILURE);
+    RETURN_VALUE_IF(U_FAILURE(*status) && *status != U_UNSUPPORTED_ERROR, -1);
     appendIfDataNotEmpty(BCP47Tag, "-ms-", measureSystem.data(), warningGenerated, status);
 
     if (warningGenerated)
