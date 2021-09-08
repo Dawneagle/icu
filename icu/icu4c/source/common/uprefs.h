@@ -24,5 +24,5 @@
 *         if status was not U_ZERO_ERROR.
 */
 int32_t uprefs_getBCP47Tag(char* uprefsBuffer, int32_t bufferSize, UErrorCode* status);
-#endif
-#endif
+#endif //UPREFS_H
+#endif //U_PLATFORM_USES_ONLY_WIN32_API

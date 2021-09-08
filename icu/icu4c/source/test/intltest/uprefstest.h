@@ -38,5 +38,5 @@ public:
     void Get12HourCycle2();   
 };
 
-#endif //UPREFSTEST_H
 #endif //U_PLATFORM_USES_ONLY_WIN32_API
+#endif //UPREFSTEST_H

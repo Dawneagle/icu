@@ -1,5 +1,5 @@
-#include "uprefstest.h"
 #if U_PLATFORM_USES_ONLY_WIN32_API
+#include "uprefstest.h"
 
 
 #define ARRAY_SIZE 512
