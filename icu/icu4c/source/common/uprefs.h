@@ -5,14 +5,14 @@
 #define UPREFS_H
 
 #include "unicode/platform.h"
-#if U_PLATFORM_USES_ONLY_WIN32_API
 #include "unicode/utypes.h"
+#if U_PLATFORM_USES_ONLY_WIN32_API
 
 /**
 * Gets the valid and canonical BCP47 tag with the user settings for Language, Calendar, Sorting, Currency,
 * First day of week, Hour cycle, and Measurement system when available.
 *
-* @param uprefsBuffer Pointer to a buffer in which this function retrieves the requested locale information.
+* @param uprefsBuffer Pointer to a buffer in which this function retrieves the BCP47 tag.
 *                     This pointer is not used if bufferSize is set to 0.
 * @param bufferSize Size, in characters, of the data buffer indicated by uprefsBuffer. Alternatively, the application
 *                   can set this parameter to 0. In this case, the function does not use the uprefsBuffer parameter
@@ -24,5 +24,6 @@
 *         if status was not U_ZERO_ERROR.
 */
 int32_t uprefs_getBCP47Tag(char* uprefsBuffer, int32_t bufferSize, UErrorCode* status);
-#endif //UPREFS_H
+
 #endif //U_PLATFORM_USES_ONLY_WIN32_API
+#endif //UPREFS_H

@@ -21,7 +21,7 @@ public:
     UPrefsTest(){};
     virtual ~UPrefsTest(){};
 
-    virtual void runIndexedTest(int32_t index, UBool exec, const char *&name, char *par = NULL);
+    virtual void runIndexedTest(int32_t index, UBool exec, const char *&name, char *par = NULL) override;
     int32_t MockGetLocaleInfoEx(LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCData, int cchData, UErrorCode* status);
     void TestGetBCP47Tag1();
     void TestBCP47TagWithSorting();
