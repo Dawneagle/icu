@@ -19,7 +19,7 @@ public:
     static int32_t measureSystem;
     static CALID calendar;
     UPrefsTest(){};
-    ~UPrefsTest(){};
+    virtual ~UPrefsTest(){};
 
     virtual void runIndexedTest(int32_t index, UBool exec, const char *&name, char *par = NULL);
     int32_t MockGetLocaleInfoEx(LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCData, int cchData, UErrorCode* status);
