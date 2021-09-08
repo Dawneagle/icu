@@ -1,5 +1,5 @@
-#if U_PLATFORM_USES_ONLY_WIN32_API
 #include "uprefstest.h"
+#if U_PLATFORM_USES_ONLY_WIN32_API
 
 
 #define ARRAY_SIZE 512
@@ -10,14 +10,6 @@
     int32_t UPrefsTest::firstday = 0;
     int32_t UPrefsTest::measureSystem = 0;
     CALID UPrefsTest::calendar = 0;
-
-UPrefsTest::UPrefsTest() 
-{
-}
-
-UPrefsTest::~UPrefsTest()
-{
-}
 
 void UPrefsTest::runIndexedTest( int32_t index, UBool exec, const char* &name, char* /*par*/ )
 {
