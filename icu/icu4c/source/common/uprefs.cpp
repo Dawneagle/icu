@@ -339,7 +339,7 @@ CharString getLocaleBCP47Tag_impl(UErrorCode* status)
     wchar_t * position = wcschr(NLSLocale.getAlias(), L'_');
     if (position != nullptr)
     {
-        position = L"\0";
+        *position = L'\0';
     }
 
     CharString languageTag;
