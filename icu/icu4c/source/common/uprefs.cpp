@@ -21,31 +21,31 @@ U_NAMESPACE_USE
 #endif
 
 #define RETURN_FAILURE_STRING_WITH_STATUS_IF(value, error, status)      \
-    if (value)                                                  \
-    {                                                           \
-        *status = error;                                        \
-        return CharString();                                    \
+    if (value)                                                          \
+    {                                                                   \
+        *status = error;                                                \
+        return CharString();                                            \
     }
 
-#define RETURN_FAILURE_WITH_STATUS_IF(condition, error)         \
-    if (condition)                                              \
-    {                                                           \
-        *status = error;                                        \
-        return 0;                              \
+#define RETURN_FAILURE_WITH_STATUS_IF(condition, error)                 \
+    if (condition)                                                      \
+    {                                                                   \
+        *status = error;                                                \
+        return 0;                                                       \
     }
 
-#define RETURN_VALUE_IF(condition, value)                       \
-    if (condition)                                              \
-    {                                                           \
-        return value;                                           \
+#define RETURN_VALUE_IF(condition, value)                               \
+    if (condition)                                                      \
+    {                                                                   \
+        return value;                                                   \
     }   
 
-#define RETURN_WITH_ALLOCATION_ERROR_IF(condition, status)      \
-    if (condition)                                              \
-    {                                                           \
-        *status = U_MEMORY_ALLOCATION_ERROR;                    \
-        return CharString();                                    \
-    }                                                           \
+#define RETURN_WITH_ALLOCATION_ERROR_IF(condition, status)              \
+    if (condition)                                                      \
+    {                                                                   \
+        *status = U_MEMORY_ALLOCATION_ERROR;                            \
+        return CharString();                                            \
+    }                                                                   \
 // -------------------------------------------------------
 // ----------------- MAPPING FUNCTIONS--------------------
 // -------------------------------------------------------
@@ -288,10 +288,8 @@ UErrorCode getUErrorCodeFromLastError()
 
 int32_t GetLocaleInfoExWrapper(LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCData, int cchData, UErrorCode* errorCode)
 {
-    if (U_FAILURE(*errorCode))
-    {
-        return 0;
-    }
+    RETURN_VALUE_IF(U_FAILURE(*errorCode), 0);
+
 #ifndef UPREFS_TEST
     *errorCode = U_ZERO_ERROR;
     int32_t result = GetLocaleInfoEx(lpLocaleName, LCType, lpLCData, cchData);
@@ -328,29 +326,27 @@ CharString getLocaleBCP47Tag_impl(UErrorCode* status)
     // First part of a bcp47 tag looks like an NLS user locale, so we get the NLS user locale.
     int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, nullptr, 0, status);
 
-    if (U_FAILURE(*status))
-    {
-        return CharString();
-    }
+    RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
     MaybeStackArray<wchar_t, 40> NLSLocale(neededBufferSize, *status);
     RETURN_WITH_ALLOCATION_ERROR_IF(U_FAILURE(*status), status);
     
     int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSLocale.getAlias(), neededBufferSize, status);
 
-    if (U_FAILURE(*status))
-    {
-        return CharString();
-    }
+    RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
     // The NLS locale may include a non-default sort, such as de-DE_phoneb. We only want the locale name before the _.
-    wchar_t * position = wcsstr(NLSLocale.getAlias(), L"_");
+    wchar_t * position = wcschr(NLSLocale.getAlias(), L'_');
     if (position != nullptr)
     {
-        position = static_cast<wchar_t*>(L"\0");
+        position = L"\0";
     }
 
     CharString languageTag;
+    int32_t resultCapacity = 0;
+    languageTag.getAppendBuffer(neededBufferSize, neededBufferSize, resultCapacity, *status);
+    RETURN_WITH_ALLOCATION_ERROR_IF(U_FAILURE(*status), status);
+
     int32_t unitsWritten = 0;
     u_strToUTF8(languageTag.data(), neededBufferSize, &unitsWritten, reinterpret_cast<UChar*>(NLSLocale.getAlias()), neededBufferSize, status);
     return languageTag;
@@ -375,25 +371,19 @@ CharString getSortingSystem_impl(UErrorCode* status)
     // In order to get the sorting system, we need to get LOCALE_SNAME, which appends the sorting system (if any) to the locale
     int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, nullptr, 0, status);
     
-    if (U_FAILURE(*status))
-    {
-        return CharString();
-    }
+    RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
     MaybeStackArray<wchar_t, 40> NLSsortingSystem(neededBufferSize, *status);
     RETURN_WITH_ALLOCATION_ERROR_IF(U_FAILURE(*status), status);
 
     int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, NLSsortingSystem.getAlias(), neededBufferSize, status);
 
-    if (U_FAILURE(*status))
-    {
-        return CharString();
-    }   
+    RETURN_VALUE_IF(U_FAILURE(*status), CharString()); 
 
     // We use LOCALE_SNAME to get the sorting method (if any). So we need to keep
     // only the sorting bit after the _, removing the locale name.
     // Example: from "de-DE_phoneb" we only want "phoneb"
-    wchar_t * startPosition = wcsstr(NLSsortingSystem.getAlias(), L"_");
+    wchar_t * startPosition = wcschr(NLSsortingSystem.getAlias(), L'_');
 
     // Note: not finding a "_" is not an error, it means the user has not selected an alternate sorting method, which is fine.
     if (startPosition != nullptr) 
@@ -414,27 +404,22 @@ CharString getCurrencyCode_impl(UErrorCode* status)
 {
     int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, nullptr, 0, status);
     
-    if (U_FAILURE(*status))
-    {
-        return CharString();
-    }
+    RETURN_VALUE_IF(U_FAILURE(*status), CharString());
     
     MaybeStackArray<wchar_t, 40> NLScurrencyData(neededBufferSize, *status);
     RETURN_WITH_ALLOCATION_ERROR_IF(U_FAILURE(*status), status);
 
     int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_SINTLSYMBOL, NLScurrencyData.getAlias(), neededBufferSize, status);
 
-    if (U_FAILURE(*status))
-    {
-        return CharString();
-    }
+    RETURN_VALUE_IF(U_FAILURE(*status), CharString());
+
     MaybeStackArray<char, 40> currency(neededBufferSize, *status);
     RETURN_WITH_ALLOCATION_ERROR_IF(U_FAILURE(*status), status);
 
     int32_t unitsWritten = 0;
     u_strToUTF8(currency.getAlias(), neededBufferSize, &unitsWritten, reinterpret_cast<UChar*>(NLScurrencyData.getAlias()), neededBufferSize, status);
 
-    if (uprv_strlen(currency.getAlias()) == 0)
+    if (unitsWritten == 0)
     {
         *status = U_INTERNAL_PROGRAM_ERROR;
         return CharString();
@@ -463,19 +448,14 @@ CharString getHourCycle_impl(UErrorCode* status)
 {
     int32_t neededBufferSize = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, nullptr, 0, status);
 
-    if (U_FAILURE(*status))
-    {
-        return CharString();
-    }
+    RETURN_VALUE_IF(U_FAILURE(*status), CharString());
+
     MaybeStackArray<wchar_t, 40> NLShourCycle(neededBufferSize, *status);
     RETURN_WITH_ALLOCATION_ERROR_IF(U_FAILURE(*status), status);
 
     int32_t result = GetLocaleInfoExWrapper(LOCALE_NAME_USER_DEFAULT, LOCALE_STIMEFORMAT, NLShourCycle.getAlias(), neededBufferSize, status);
 
-    if (U_FAILURE(*status))
-    {
-        return CharString();
-    }   
+    RETURN_VALUE_IF(U_FAILURE(*status), CharString());
 
     CharString hourCycle = get12_or_24hourFormat(NLShourCycle.getAlias(), status);
     if (hourCycle.length() == 0)

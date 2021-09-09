@@ -1777,16 +1777,15 @@ The leftmost codepage (.xxx) wins.
     return posixID;
 
 #elif U_PLATFORM_USES_ONLY_WIN32_API
-#define POSIX_LOCALE_CAPACITY 64
     UErrorCode status = U_ZERO_ERROR;
     char *correctedPOSIXLocale = nullptr;
 
     int32_t neededBufferSize = uprefs_getBCP47Tag(nullptr, 0, &status);
-    char* windowsLocale = static_cast<char *>(uprv_malloc(neededBufferSize));
-    int32_t length = uprefs_getBCP47Tag(windowsLocale, neededBufferSize, &status);
+    MaybeStackArray<char,40> windowsLocale(neededBufferSize, status);
+    int32_t length = uprefs_getBCP47Tag(windowsLocale.getAlias(), neededBufferSize, &status);
 
     // Now we should have a Windows locale name that needs converted to the POSIX style.
-    if (length > 0) // If length is 0, then the GetLocaleInfoEx failed.
+    if (length > 0) // If length is 0, then the call to uprefs_getBCP47Tag failed.
     {
 
         // Now normalize the resulting name
@@ -1794,7 +1793,7 @@ The leftmost codepage (.xxx) wins.
         /* TODO: Should we just exit on memory allocation failure? */
         if (correctedPOSIXLocale)
         {
-            int32_t posixLen = uloc_canonicalize(windowsLocale, correctedPOSIXLocale, POSIX_LOCALE_CAPACITY, &status);
+            int32_t posixLen = uloc_canonicalize(windowsLocale.getAlias(), correctedPOSIXLocale, length * 2, &status);
             if (U_SUCCESS(status))
             {
                 *(correctedPOSIXLocale + posixLen) = 0;
@@ -1813,7 +1812,6 @@ The leftmost codepage (.xxx) wins.
     if (gCorrectedPOSIXLocale == nullptr) {
         gCorrectedPOSIXLocale = "en_US";
     }
-    uprv_free(windowsLocale);
     return gCorrectedPOSIXLocale;
 
 #elif U_PLATFORM == U_PF_OS400

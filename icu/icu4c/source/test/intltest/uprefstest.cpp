@@ -148,13 +148,13 @@ void UPrefsTest::TestGetBCP47Tag1()
     measureSystem = 1;
     calendar = CAL_GREGORIAN;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "en-US-u-ca-gregory-cu-usd-fw-mon-hc-h23-ms-ussystem\0";
+    const char* expectedValue = "en-US-u-ca-gregory-cu-usd-fw-mon-hc-h23-ms-ussystem\0";
     
     if ( uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 52)
     {
-        errln("Expected length to be 52, but got: %d\n",strlen(languageBuffer));
+        errln("Expected length to be 52, but got: %d\n",uprv_strlen(languageBuffer));
     }
-    if ( expectedValue.compare(languageBuffer) != 0)
+    if ( uprv_strcmp(expectedValue, languageBuffer) != 0)
     {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
@@ -175,7 +175,7 @@ void UPrefsTest::TestBCP47TagWithSorting()
     
     if ( uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 63)
     {
-        errln("Expected length to be 63, but got: %d\n",strlen(languageBuffer));
+        errln("Expected length to be 63, but got: %d\n",uprv_strlen(languageBuffer));
     }
     if ( expectedValue.compare(languageBuffer) != 0)
     {
@@ -198,7 +198,7 @@ void UPrefsTest::TestBCP47TagChineseSimplified()
     
     if ( uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 57)
     {
-        errln("Expected length to be 57, but got: %d\n",strlen(languageBuffer));
+        errln("Expected length to be 57, but got: %d\n",uprv_strlen(languageBuffer));
     }
     if ( expectedValue.compare(languageBuffer) != 0)
     {
@@ -221,7 +221,7 @@ void UPrefsTest::TestBCP47TagChineseSortingStroke()
     
     if ( uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 60)
     {
-        errln("Expected length to be 60, but got: %d\n",strlen(languageBuffer));
+        errln("Expected length to be 60, but got: %d\n",uprv_strlen(languageBuffer));
     }
     if ( expectedValue.compare(languageBuffer) != 0)
     {
@@ -244,7 +244,7 @@ void UPrefsTest::TestBCP47TagJapanCalendar()
     
     if ( uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51)
     {
-        errln("Expected length to be 51, but got: %d\n",strlen(languageBuffer));
+        errln("Expected length to be 51, but got: %d\n",uprv_strlen(languageBuffer));
     }
     if ( expectedValue.compare(languageBuffer) != 0)
     {
@@ -269,7 +269,7 @@ void UPrefsTest::TestUseNeededBuffer()
     
     if ( uprefs_getBCP47Tag(languageBuffer, neededBufferSize, &status) != 51)
     {
-        errln("Expected length to be 51, but got: %d\n",strlen(languageBuffer));
+        errln("Expected length to be 51, but got: %d\n",uprv_strlen(languageBuffer));
     }
     if ( expectedValue.compare(languageBuffer) != 0)
     {
@@ -294,11 +294,11 @@ void UPrefsTest::TestGetNeededBuffer()
 
     if ( neededBufferSize != 61)
     {
-        errln("Expected buffer size to be 61, but got: %d\n",strlen(languageBuffer));
+        errln("Expected buffer size to be 61, but got: %d\n",uprv_strlen(languageBuffer));
     }
     if ( uprefs_getBCP47Tag(languageBuffer, neededBufferSize, &status) != 61)
     {
-        errln("Expected length to be 61, but got: %d\n",strlen(languageBuffer));
+        errln("Expected length to be 61, but got: %d\n",uprv_strlen(languageBuffer));
     }
     if ( expectedValue.compare(languageBuffer) != 0)
     {
@@ -321,7 +321,7 @@ void UPrefsTest::TestGetUnsupportedSorting()
 
     if ( uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51)
     {
-        errln("Expected length to be 51, but got: %d\n",strlen(languageBuffer));
+        errln("Expected length to be 51, but got: %d\n",uprv_strlen(languageBuffer));
     }
     if ( expectedValue.compare(languageBuffer) != 0)
     {
@@ -343,7 +343,7 @@ void UPrefsTest::Get24HourCycleMixed()
     std::string expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h23-ms-metric\0";
 
     if (uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51) {
-        errln("Expected length to be 51, but got: %d\n", strlen(languageBuffer));
+        errln("Expected length to be 51, but got: %d\n", uprv_strlen(languageBuffer));
     }
     if (expectedValue.compare(languageBuffer) != 0) {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
@@ -364,7 +364,7 @@ void UPrefsTest::Get12HourCycleMixed()
     std::string expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
 
     if (uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51) {
-        errln("Expected length to be 51, but got: %d\n", strlen(languageBuffer));
+        errln("Expected length to be 51, but got: %d\n", uprv_strlen(languageBuffer));
     }
     if (expectedValue.compare(languageBuffer) != 0) {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
@@ -386,7 +386,7 @@ void UPrefsTest::Get12HourCycleMixed2()
     std::string expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
 
     if (uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51) {
-        errln("Expected length to be 51, but got: %d\n", strlen(languageBuffer));
+        errln("Expected length to be 51, but got: %d\n", uprv_strlen(languageBuffer));
     }
     if (expectedValue.compare(languageBuffer) != 0) {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
@@ -407,7 +407,7 @@ void UPrefsTest::Get12HourCycle()
     std::string expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
 
     if (uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51) {
-        errln("Expected length to be 51, but got: %d\n", strlen(languageBuffer));
+        errln("Expected length to be 51, but got: %d\n", uprv_strlen(languageBuffer));
     }
     if (expectedValue.compare(languageBuffer) != 0) {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
@@ -428,7 +428,7 @@ void UPrefsTest::Get12HourCycle2()
     std::string expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
 
     if (uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51) {
-        errln("Expected length to be 51, but got: %d\n", strlen(languageBuffer));
+        errln("Expected length to be 51, but got: %d\n", uprv_strlen(languageBuffer));
     }
     if (expectedValue.compare(languageBuffer) != 0) {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
