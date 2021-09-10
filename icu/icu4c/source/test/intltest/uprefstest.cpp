@@ -171,13 +171,13 @@ void UPrefsTest::TestBCP47TagWithSorting()
     measureSystem = 1;
     calendar = CAL_GREGORIAN;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "de-DE-u-ca-gregory-co-phonebk-cu-eur-fw-mon-hc-h23-ms-ussystem\0";
+    char* expectedValue = "de-DE-u-ca-gregory-co-phonebk-cu-eur-fw-mon-hc-h23-ms-ussystem\0";
     
     if ( uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 63)
     {
         errln("Expected length to be 63, but got: %d\n",uprv_strlen(languageBuffer));
     }
-    if ( expectedValue.compare(languageBuffer) != 0)
+    if ( uprv_strcmp(expectedValue, languageBuffer) != 0)
     {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
@@ -194,13 +194,13 @@ void UPrefsTest::TestBCP47TagChineseSimplified()
     measureSystem = 1;
     calendar = CAL_GREGORIAN;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "zh-Hans-HK-u-ca-gregory-cu-eur-fw-wed-hc-h12-ms-ussystem\0";
+    char* expectedValue = "zh-Hans-HK-u-ca-gregory-cu-eur-fw-wed-hc-h12-ms-ussystem\0";
     
     if ( uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 57)
     {
         errln("Expected length to be 57, but got: %d\n",uprv_strlen(languageBuffer));
     }
-    if ( expectedValue.compare(languageBuffer) != 0)
+    if ( uprv_strcmp(expectedValue, languageBuffer) != 0)
     {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
@@ -217,13 +217,13 @@ void UPrefsTest::TestBCP47TagChineseSortingStroke()
     measureSystem = 0;
     calendar = CAL_GREGORIAN;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "zh-SG-u-ca-gregory-co-stroke-cu-eur-fw-wed-hc-h12-ms-metric\0";
+    char* expectedValue = "zh-SG-u-ca-gregory-co-stroke-cu-eur-fw-wed-hc-h12-ms-metric\0";
     
     if ( uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 60)
     {
         errln("Expected length to be 60, but got: %d\n",uprv_strlen(languageBuffer));
     }
-    if ( expectedValue.compare(languageBuffer) != 0)
+    if ( uprv_strcmp(expectedValue, languageBuffer) != 0)
     {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
@@ -240,13 +240,13 @@ void UPrefsTest::TestBCP47TagJapanCalendar()
     measureSystem = 0;
     calendar = CAL_JAPAN;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "ja-JP-u-ca-japanese-cu-mxn-fw-tue-hc-h12-ms-metric\0";
+    char* expectedValue = "ja-JP-u-ca-japanese-cu-mxn-fw-tue-hc-h12-ms-metric\0";
     
     if ( uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51)
     {
         errln("Expected length to be 51, but got: %d\n",uprv_strlen(languageBuffer));
     }
-    if ( expectedValue.compare(languageBuffer) != 0)
+    if ( uprv_strcmp(expectedValue, languageBuffer) != 0)
     {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
@@ -263,7 +263,7 @@ void UPrefsTest::TestUseNeededBuffer()
     measureSystem = 0;
     calendar = CAL_THAI;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
+    char* expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
 
     int32_t neededBufferSize = uprefs_getBCP47Tag(nullptr, 0, &status);
     
@@ -271,7 +271,7 @@ void UPrefsTest::TestUseNeededBuffer()
     {
         errln("Expected length to be 51, but got: %d\n",uprv_strlen(languageBuffer));
     }
-    if ( expectedValue.compare(languageBuffer) != 0)
+    if ( uprv_strcmp(expectedValue, languageBuffer) != 0)
     {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
@@ -288,7 +288,7 @@ void UPrefsTest::TestGetNeededBuffer()
     measureSystem = 0;
     calendar = CAL_THAI;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "zh-SG-u-ca-buddhist-co-stroke-cu-mxn-fw-tue-hc-h12-ms-metric\0";
+    char* expectedValue = "zh-SG-u-ca-buddhist-co-stroke-cu-mxn-fw-tue-hc-h12-ms-metric\0";
 
     int32_t neededBufferSize = uprefs_getBCP47Tag(nullptr, 0, &status);
 
@@ -300,7 +300,7 @@ void UPrefsTest::TestGetNeededBuffer()
     {
         errln("Expected length to be 61, but got: %d\n",uprv_strlen(languageBuffer));
     }
-    if ( expectedValue.compare(languageBuffer) != 0)
+    if ( uprv_strcmp(expectedValue, languageBuffer) != 0)
     {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
@@ -317,13 +317,13 @@ void UPrefsTest::TestGetUnsupportedSorting()
     measureSystem = 0;
     calendar = CAL_THAI;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "hu-HU-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
+    char* expectedValue = "hu-HU-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
 
     if ( uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51)
     {
         errln("Expected length to be 51, but got: %d\n",uprv_strlen(languageBuffer));
     }
-    if ( expectedValue.compare(languageBuffer) != 0)
+    if ( uprv_strcmp(expectedValue, languageBuffer) != 0)
     {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
@@ -340,12 +340,12 @@ void UPrefsTest::Get24HourCycleMixed()
     measureSystem = 0;
     calendar = CAL_THAI;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h23-ms-metric\0";
+    char* expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h23-ms-metric\0";
 
     if (uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51) {
         errln("Expected length to be 51, but got: %d\n", uprv_strlen(languageBuffer));
     }
-    if (expectedValue.compare(languageBuffer) != 0) {
+    if (uprv_strcmp(expectedValue, languageBuffer) != 0) {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
 }
@@ -361,12 +361,12 @@ void UPrefsTest::Get12HourCycleMixed()
     measureSystem = 0;
     calendar = CAL_THAI;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
+    char* expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
 
     if (uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51) {
         errln("Expected length to be 51, but got: %d\n", uprv_strlen(languageBuffer));
     }
-    if (expectedValue.compare(languageBuffer) != 0) {
+    if (uprv_strcmp(expectedValue, languageBuffer) != 0) {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
 }
@@ -383,12 +383,12 @@ void UPrefsTest::Get12HourCycleMixed2()
     measureSystem = 0;
     calendar = CAL_THAI;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
+    char* expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
 
     if (uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51) {
         errln("Expected length to be 51, but got: %d\n", uprv_strlen(languageBuffer));
     }
-    if (expectedValue.compare(languageBuffer) != 0) {
+    if (uprv_strcmp(expectedValue, languageBuffer) != 0) {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
 }
@@ -404,12 +404,12 @@ void UPrefsTest::Get12HourCycle()
     measureSystem = 0;
     calendar = CAL_THAI;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
+    char* expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
 
     if (uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51) {
         errln("Expected length to be 51, but got: %d\n", uprv_strlen(languageBuffer));
     }
-    if (expectedValue.compare(languageBuffer) != 0) {
+    if (uprv_strcmp(expectedValue, languageBuffer) != 0) {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
 }
@@ -425,12 +425,12 @@ void UPrefsTest::Get12HourCycle2()
     measureSystem = 0;
     calendar = CAL_THAI;
     UErrorCode status = U_ZERO_ERROR;
-    std::string expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
+    char* expectedValue = "ja-JP-u-ca-buddhist-cu-mxn-fw-tue-hc-h12-ms-metric\0";
 
     if (uprefs_getBCP47Tag(languageBuffer, ARRAY_SIZE, &status) != 51) {
         errln("Expected length to be 51, but got: %d\n", uprv_strlen(languageBuffer));
     }
-    if (expectedValue.compare(languageBuffer) != 0) {
+    if (uprv_strcmp(expectedValue, languageBuffer) != 0) {
         errln("Expected BCP47Tag to be %s, but got: %s\n", expectedValue, languageBuffer);
     }
 }

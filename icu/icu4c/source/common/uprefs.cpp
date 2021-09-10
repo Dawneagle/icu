@@ -484,6 +484,7 @@ void appendIfDataNotEmpty(CharString& dest, const char* firstData, const char* s
     if (*status == U_UNSUPPORTED_ERROR)
     {
         warningGenerated = true;
+        *status = U_ZERO_ERROR;
     }
 
     if (uprv_strlen(secondData) != 0)
